@@ -1,0 +1,137 @@
+# Evergreen Project Config
+
+# When a task that used to pass starts to fail go through all versions that may
+# have been skipped to detect when the task started failing.
+stepback: true
+
+# Mark a failure as a system/bootstrap failure (purple box) rather than a task
+# failure by default.
+# Actual testing tasks are marked with `type: test`
+command_type: system
+
+# If any of the pre tasks fail, the task will be marked as a failure.
+pre_error_fails_task: true
+
+# Do not create patches for changes that only modify the following file types
+ignore:
+  - "*.md"
+
+# Protect ourselves against rogue test cases, or curl gone wild, that runs forever
+exec_timeout_secs: 86400 # 24hrs for TPC-H benchmark
+
+# What to do when evergreen hits the timeout (`post:` tasks are run automatically)
+timeout:
+  - command: shell.exec
+    params:
+      script: |
+        ls -la
+
+pre:
+  - func: "fetch source"
+  - func: "create expansions"
+
+functions:
+  "fetch source":
+    - command: git.get_project
+      params:
+        directory: sql-engines-common-test-infra
+
+  "create expansions":
+    - command: shell.exec
+      params:
+        shell: bash
+        working_dir: sql-engines-common-test-infra
+        script: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          cat <<EOT > expansions.yml
+          prepare_shell: |
+            set -o errexit
+            export PATH="$PATH"
+          EOT
+    - command: expansions.update
+      params:
+        file: sql-engines-common-test-infra/expansions.yml
+
+  "install rust toolchain":
+    - command: shell.exec
+      params:
+        shell: bash
+        script: |
+          ${prepare_shell}
+
+          # install rustup from scratch
+          rm -rf ~/.rustup
+          curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path $DEFAULT_HOST_OPTIONS
+
+          echo --------- rustup show -----------
+          rustup show
+          echo ----- Rustup toolchain list -----
+          rustup toolchain list
+          echo --------- Cargo version ---------
+          cargo --version
+          echo ---------------------------------
+
+  "check clippy":
+    - command: shell.exec
+      type: test
+      params:
+        shell: bash
+        working_dir: sql-engines-common-test-infra
+        script: |
+          ${prepare_shell}
+          cargo clippy --all-targets -- -D warnings
+
+  "check rustfmt":
+    - command: shell.exec
+      type: test
+      params:
+        shell: bash
+        working_dir: sql-engines-common-test-infra
+        script: |
+          ${prepare_shell}
+          rustfmt --check $(find . -not \( -path \./target -prune \) -name \*.rs)
+
+  "check unused dependencies":
+    - command: shell.exec
+      type: test
+      params:
+        shell: bash
+        working_dir: sql-engines-common-test-infra
+        script: |
+          ${prepare_shell}
+          cargo install cargo-machete
+          cargo build --all-features
+          set +e
+          cargo machete
+          RETURN=$?
+          set -e
+          if [ $RETURN -ne 0 ]; then
+            >&2 echo "Unused dependencies found"
+            >&2 cargo machete
+            exit 1
+          fi
+
+tasks:
+  - name: clippy
+    commands:
+      - func: "install rust toolchain"
+      - func: "check clippy"
+
+  - name: rustfmt
+    commands:
+      - func: "install rust toolchain"
+      - func: "check rustfmt"
+
+  - name: unused-dependencies
+    commands:
+      - func: "install rust toolchain"
+      - func: "check unused dependencies"
+
+buildvariants:
+  - name: static-analysis
+    display_name: "* Static Analysis"
+    run_on: [ubuntu1804-test]
+    tasks:
+      - name: clippy
+      - name: rustfmt
+      - name: unused-dependencies
