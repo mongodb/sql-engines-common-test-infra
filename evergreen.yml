@@ -111,6 +111,17 @@ functions:
             exit 1
           fi
 
+  "run rust tests":
+    - command: shell.exec
+      type: test
+      params:
+        shell: bash
+        working_dir: sql-engines-common-test-infra
+        script: |
+          ${prepare_shell}
+          echo ${description}
+          cargo test ${cargo_test_flags}
+
 tasks:
   - name: clippy
     commands:
@@ -127,6 +138,13 @@ tasks:
       - func: "install rust toolchain"
       - func: "check unused dependencies"
 
+  - name: test-rust
+    commands:
+      - func: "install rust toolchain"
+      - func: "run rust tests"
+        vars:
+          description: "run rust unit tests"
+
 buildvariants:
   - name: static-analysis
     display_name: "* Static Analysis"
@@ -135,3 +153,9 @@ buildvariants:
       - name: clippy
       - name: rustfmt
       - name: unused-dependencies
+
+  - name: ubuntu1804-unit-test
+    display_name: "Ubuntu 18.04 - Unit Tests"
+    run_on: [ubuntu1804-test]
+    tasks:
+      - name: test-rust
