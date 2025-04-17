@@ -67,7 +67,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// parse_yaml_test_file deserializes the file at the provided path into a YamlTestFile of `T`s.
 pub fn parse_yaml_test_file<T: DeserializeOwned>(path: &str) -> Result<YamlTestFile<T>> {
-    let f = fs::File::open(path).map_err(|e| Error::InvalidFile(e))?;
+    let f = fs::File::open(path).map_err(Error::InvalidFile)?;
     let test_file: YamlTestFile<T> = serde_yaml::from_reader(f)
         .map_err(|e| Error::CannotDeserializeYaml(path.to_string(), e))?;
     Ok(test_file)
