@@ -3,13 +3,15 @@
 /// provides primitives for generating Rust test cases from YAML files. It is intended for use with
 /// build scripts that execute as part of a `cargo test` invocation.
 ///
+#[cfg(test)]
+mod test;
+
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
     fs::{self},
     io,
 };
 use thiserror::Error;
-
 
 /// A struct representing a YAML file that contains tests. All YAML test files contain a top-level
 /// `tests` key. The value of `tests` is a list of test cases, parameterized here as `T`.
