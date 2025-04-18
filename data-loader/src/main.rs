@@ -1,7 +1,37 @@
+use clap::Parser;
 use mongodb::{bson::Bson, IndexModel};
 use serde::{Deserialize, Serialize};
+use std::io;
+use thiserror::Error;
+
+/// This is a standalone executable that loads test data for SQL Engines integration tests. The
+/// data must be specified in YAML or JSON files (using the .y[a]ml or .json extensions), and they
+/// must follow the format described by the TestDataFile and TestDataEntry types. See those types
+/// for more details.
+#[derive(Parser, Debug)]
+#[command(version)]
+struct Args {
+    /// mongod URI. Optional.
+    /// Defaults to "mongodb://$MDB_TEST_LOCAL_HOST:$MDB_TEST_LOCAL_PORT".
+    #[arg(long)]
+    mongod_uri: Option<String>,
+
+    /// ADF URI. Optional.
+    /// Defaults to "mongodb://$ADF_TEST_LOCAL_USER:$ADF_TEST_LOCAL_PASSWORD@$ADF_TEST_LOCAL_HOST:$ADF_TEST_LOCAL_PORT".
+    #[arg(long)]
+    adf_uri: Option<String>,
+
+    /// Path to directory containing test data files
+    #[arg(short = 'd', long = "testDataDirectory")]
+    test_data_directory: String,
+
+    /// Indicates whether schema is written to ADF or mongod
+    #[arg(long = "adf")]
+    write_schema_to_adf: bool,
+}
 
 fn main() {
+    let args = Args::parse();
     println!("Hello, world!");
 }
 
@@ -81,4 +111,18 @@ struct ViewData {
     ///
     /// When run against ADF, this field will be ignored even if provided.
     pipeline: Option<Bson>,
+}
+
+type Result<T> = std::result::Result<T, DataLoaderError>;
+
+#[derive(Error, Debug)]
+pub enum DataLoaderError {
+    #[error(transparent)]
+    FileSystem(#[from] io::Error),
+    #[error(transparent)]
+    Mongo(#[from] mongodb::error::Error),
+    #[error(transparent)]
+    Serde(#[from] serde_yaml::Error),
+    #[error("Each entry must specify exactly one of 'view' or 'collection', but at least one entry in {0} does not")]
+    MissingViewOrCollection(String),
 }
