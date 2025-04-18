@@ -1,0 +1,25 @@
+tests:
+  - description: Test with no skip_reason, no options, and a single expectation
+    input: "test input"
+    expected_1: "test expectation"
+
+  - description: Test with skip_reason
+    skip_reason: "skip reason: test"
+    input: "test input"
+    expected_1: "test expectation"
+
+  - description: Test with no options and multiple expectations
+    input: "test input"
+    expected_1: "first expectation"
+    expected_2: "second expectation"
+
+  - description: Test with one option
+    input: "test input"
+    option_1: "test option"
+    expected_1: "test expectation"
+
+  - description: Test with one option
+    input: "test input"
+    option_1: "first option"
+    option_2: "second option"
+    expected_1: "test expectation"
