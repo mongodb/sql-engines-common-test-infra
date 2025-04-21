@@ -133,7 +133,7 @@ struct ViewDefinition {
     /// The pipeline definition of the view. Optional.
     ///
     /// When run against ADF, this field will be ignored even if provided.
-    pipeline: Bson,
+    pipeline: Vec<Document>,
 }
 
 type Result<T> = std::result::Result<T, DataLoaderError>;
@@ -202,11 +202,11 @@ async fn main() -> Result<()> {
         let adf_client = Client::with_uri_str(adf_uri).await?;
 
         println!("Step 6: Writing schema to ADF.");
-        set_schemas_in_adf(adf_client, test_data_files)
+        set_schemas_in_adf(adf_client, test_data_files).await
     } else {
         // Otherwise, we need to write the schema directly to mongod.
         println!("Step 5: Writing schema directly to mongod.");
-        set_schemas_in_mongod(mdb_client, test_data_files)
+        set_schemas_in_mongod(mdb_client, test_data_files).await
     }
 }
 
@@ -229,7 +229,7 @@ fn read_data_files(dir_path: String) -> Result<Vec<TestDataFile>> {
         // Attempt to parse the files into TestDataFile structs
         .map(|file_path| {
             let f = fs::File::open(file_path.clone())?;
-            let mut test_data: TestDataFile = serde_yaml::from_reader(f)?;
+            let test_data: TestDataFile = serde_yaml::from_reader(f)?;
 
             // Ensure the data files are valid. Each entry
             // must specify either a collection or a view.
@@ -252,19 +252,17 @@ fn read_data_files(dir_path: String) -> Result<Vec<TestDataFile>> {
 }
 
 async fn drop_collections(client: Client, test_data_files: Vec<TestDataFile>) -> Result<()> {
-    test_data_files.into_iter().try_for_each(|tdf| {
-        tdf.dataset
-            .into_iter()
-            .try_for_each(async move |entry| match entry.collection {
-                None => (),
-                // If the entry specifies a collection, drop it.
-                Some(c) => {
-                    let database = client.database(entry.db.as_str());
-                    database.collection::<Bson>(c.name.as_str()).drop().await?;
-                    println!("\tDropped {}.{}", entry.db, c.name);
-                }
-            })
-    })
+    for tdf in test_data_files {
+        for entry in tdf.dataset {
+            if let Some(c) = entry.collection {
+                let db = client.database(entry.db.as_str());
+                db.collection::<Bson>(c.name.as_str()).drop().await?;
+                println!("\tDropped {}.{}", entry.db, c.name);
+            }
+        }
+    }
+
+    Ok(())
 }
 
 async fn load_test_data(client: Client, test_data_files: Vec<TestDataFile>) -> Result<()> {
@@ -305,13 +303,13 @@ async fn load_test_data(client: Client, test_data_files: Vec<TestDataFile>) -> R
                         "\tAttempting to create view {} on {}.{}",
                         v.name, entry.db, d.view_on,
                     );
-                    let view_res = db
-                        .create_collection(v.name)
-                        .view_on(d.view_on)
+                    let res = db
+                        .create_collection(v.name.clone())
+                        .view_on(d.view_on.clone())
                         .pipeline(d.pipeline)
                         .await?;
                     println!(
-                        "\tSuccessfully created view {} on {}.{}",
+                        "\tSuccessfully created view {} on {}.{}\n\t\tResult: {res:?}",
                         v.name, entry.db, d.view_on,
                     );
                 }
@@ -351,7 +349,7 @@ async fn set_schemas_in_adf(client: Client, test_data_files: Vec<TestDataFile>) 
 
             let res = db.run_command(command_doc).await?;
             println!(
-                "\tSet schema for {}.{} via {}\n\tResult: {:?}",
+                "\tSet schema for {}.{} via {}\n\t\tResult: {:?}",
                 entry.db, datasource_name, command_name, res
             );
         }
@@ -376,15 +374,15 @@ async fn set_schemas_in_mongod(client: Client, test_data_files: Vec<TestDataFile
                 let schema_collection = db.collection::<Document>("__sql_schemas");
 
                 let schema_doc = doc! {
-                    "_id": datasource_name,
+                    "_id": datasource_name.clone(),
                     "type": datasource_type,
                     "schema": schema,
-                    "lastUpdated": datetime::DateTime::new(),
+                    "lastUpdated": datetime::DateTime::now(),
                 };
 
                 let res = schema_collection.insert_one(schema_doc).await?;
                 println!(
-                    "\tSet schema for {}.{}\n\tResult: {:?}",
+                    "\tSet schema for {}.{}\n\t\tResult: {:?}",
                     entry.db, datasource_name, res
                 );
             } else {
