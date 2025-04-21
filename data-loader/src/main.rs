@@ -310,13 +310,12 @@ async fn load_test_data(client: Client, test_data_files: Vec<TestDataFile>) -> R
                         "\tAttempting to create view {} on {}.{}",
                         v.name, entry.db, d.view_on,
                     );
-                    let res = db
-                        .create_collection(v.name.clone())
+                    db.create_collection(v.name.clone())
                         .view_on(d.view_on.clone())
                         .pipeline(d.pipeline)
                         .await?;
                     println!(
-                        "\tSuccessfully created view {} on {}.{}\n\t\tResult: {res:?}",
+                        "\tSuccessfully created view {} on {}.{}",
                         v.name, entry.db, d.view_on,
                     );
                 }
