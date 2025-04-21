@@ -1,4 +1,3 @@
-use crate::DataLoaderError::{SerdeJson, SerdeYaml};
 use clap::Parser;
 use mongodb::{
     bson::{datetime, doc, Bson, Document},
@@ -220,10 +219,10 @@ fn read_data_files(dir_path: String) -> Result<Vec<TestDataFile>> {
             // Only parse paths to '.y[a]ml' or '.json' files
             let test_data_file: TestDataFile = if ext == "yml" || ext == "yaml" {
                 let f = fs::File::open(path.clone())?;
-                serde_yaml::from_reader(f).map_err(SerdeYaml)?
+                serde_yaml::from_reader(f).map_err(DataLoaderError::SerdeYaml)?
             } else if ext == "json" {
                 let f = fs::File::open(path.clone())?;
-                serde_json::from_reader(f).map_err(SerdeJson)?
+                serde_json::from_reader(f).map_err(DataLoaderError::SerdeJson)?
             } else {
                 println!("\tIgnoring file without '.y[a]ml' or '.json' extension: {path:?}");
                 continue;
@@ -340,17 +339,20 @@ async fn set_schemas_in_adf(client: Client, test_data_files: Vec<TestDataFile>) 
             let command_doc: Document;
             let command_name: &str;
 
-            if let Some(schema) = entry.schema {
-                // If schema is provided, write the schema using sqlSetSchema.
-                db = client.database(entry.db.as_str());
-                command_doc = doc! {"sqlSetSchema": datasource_name.clone(), "schema": {"jsonSchema": schema, "version": 1}};
-                command_name = "sqlSetSchema";
-            } else {
-                // Otherwise, write the schema using sqlGenerateSchema. Note
-                // this must be run against the admin db.
-                db = client.database("admin");
-                command_doc = doc! {"sqlGenerateSchema": 1, "setSchemas": true, "sampleNamespaces": vec![format!("{}.{}", entry.db, datasource_name.clone())]};
-                command_name = "sqlGenerateSchema";
+            match entry.schema {
+                Some(schema) => {
+                    // If schema is provided, write the schema using sqlSetSchema.
+                    db = client.database(entry.db.as_str());
+                    command_doc = doc! {"sqlSetSchema": datasource_name.clone(), "schema": {"jsonSchema": schema, "version": 1}};
+                    command_name = "sqlSetSchema";
+                }
+                _ => {
+                    // Otherwise, write the schema using sqlGenerateSchema. Note
+                    // this must be run against the admin db.
+                    db = client.database("admin");
+                    command_doc = doc! {"sqlGenerateSchema": 1, "setSchemas": true, "sampleNamespaces": vec![format!("{}.{}", entry.db, datasource_name.clone())]};
+                    command_name = "sqlGenerateSchema";
+                }
             }
 
             let res = db.run_command(command_doc).await?;
@@ -375,27 +377,30 @@ async fn set_schemas_in_mongod(client: Client, test_data_files: Vec<TestDataFile
             };
 
             // Only write schema for entries where it is specified
-            if let Some(schema) = entry.schema {
-                let db = client.database(entry.db.as_str());
-                let schema_collection = db.collection::<Document>("__sql_schemas");
+            match entry.schema {
+                Some(schema) => {
+                    let db = client.database(entry.db.as_str());
+                    let schema_collection = db.collection::<Document>("__sql_schemas");
 
-                let schema_doc = doc! {
-                    "_id": datasource_name.clone(),
-                    "type": datasource_type,
-                    "schema": schema,
-                    "lastUpdated": datetime::DateTime::now(),
-                };
+                    let schema_doc = doc! {
+                        "_id": datasource_name.clone(),
+                        "type": datasource_type,
+                        "schema": schema,
+                        "lastUpdated": datetime::DateTime::now(),
+                    };
 
-                let res = schema_collection.insert_one(schema_doc).await?;
-                println!(
-                    "\tSet schema for {}.{}\n\t\tResult: {:?}",
-                    entry.db, datasource_name, res
-                );
-            } else {
-                println!(
-                    "\tSkipping {}.{}: no schema specified",
-                    entry.db, datasource_name
-                );
+                    let res = schema_collection.insert_one(schema_doc).await?;
+                    println!(
+                        "\tSet schema for {}.{}\n\t\tResult: {:?}",
+                        entry.db, datasource_name, res
+                    );
+                }
+                _ => {
+                    println!(
+                        "\tSkipping {}.{}: no schema specified",
+                        entry.db, datasource_name
+                    );
+                }
             }
         }
     }
