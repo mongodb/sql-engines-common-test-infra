@@ -1,3 +1,4 @@
+use crate::DataLoaderError::{SerdeJson, SerdeYaml};
 use clap::Parser;
 use mongodb::{
     bson::{datetime, doc, Bson, Document},
@@ -211,29 +212,24 @@ async fn main() -> Result<()> {
 }
 
 fn read_data_files(dir_path: String) -> Result<Vec<TestDataFile>> {
-    // Read the directory and iterate over each entry
-    fs::read_dir(dir_path)?
-        // Only retain paths to '.y[a]ml' files
-        .filter_map(|file| {
-            let path = file.unwrap().path();
-            // todo: update this to support json and dynamically pick a method for parsing
-            if let Some(ext) = path.extension() {
-                if ext == "yml" || ext == "yaml" {
-                    return Some(path);
-                } else {
-                    println!("\tIgnoring file without '.y[a]ml' extension: {path:?}");
-                }
-            }
-            None
-        })
-        // Attempt to parse the files into TestDataFile structs
-        .map(|file_path| {
-            let f = fs::File::open(file_path.clone())?;
-            let test_data: TestDataFile = serde_yaml::from_reader(f)?;
+    let mut test_data_files = vec![];
+    for file in fs::read_dir(dir_path)? {
+        let path = file?.path();
 
-            // Ensure the data files are valid. Each entry
-            // must specify either a collection or a view.
-            if test_data
+        if let Some(ext) = path.extension() {
+            // Only parse paths to '.y[a]ml' or '.json' files
+            let test_data_file: TestDataFile = if ext == "yml" || ext == "yaml" {
+                let f = fs::File::open(path.clone())?;
+                serde_yaml::from_reader(f).map_err(SerdeYaml)?
+            } else if ext == "json" {
+                let f = fs::File::open(path.clone())?;
+                serde_json::from_reader(f).map_err(SerdeJson)?
+            } else {
+                println!("\tIgnoring file without '.y[a]ml' or '.json' extension: {path:?}");
+                continue;
+            };
+
+            if test_data_file
                 .clone()
                 .dataset
                 .into_iter()
@@ -242,23 +238,34 @@ fn read_data_files(dir_path: String) -> Result<Vec<TestDataFile>> {
                 > 0
             {
                 return Err(DataLoaderError::InvalidViewOrCollectionDataEntry(
-                    file_path.into_os_string().into_string().unwrap(),
+                    path.into_os_string().into_string().unwrap(),
                 ));
             }
 
-            Ok(test_data)
-        })
-        .collect()
+            test_data_files.push(test_data_file);
+        }
+    }
+
+    Ok(test_data_files)
 }
 
 async fn drop_collections(client: Client, test_data_files: Vec<TestDataFile>) -> Result<()> {
     for tdf in test_data_files {
         for entry in tdf.dataset {
-            if let Some(c) = entry.collection {
-                let db = client.database(entry.db.as_str());
-                db.collection::<Bson>(c.name.as_str()).drop().await?;
-                println!("\tDropped {}.{}", entry.db, c.name);
+            let db = client.database(entry.db.as_str());
+            match (entry.collection, entry.view) {
+                (Some(CollectionData { name, .. }), _) | (_, Some(ViewData { name, .. })) => {
+                    db.collection::<Bson>(name.as_str()).drop().await?;
+                    println!("\tDropped {}.{}", entry.db, name);
+                }
+                _ => (),
             }
+
+            // We should also drop the schema db. We may attempt to drop the
+            // same schema collection multiple times but that is a safe thing
+            // to do. This is more simple than ensuring we only ever attempt
+            // to drop a schema collection exactly once.
+            db.collection::<Bson>("__sql_schemas").drop().await?;
         }
     }
 
