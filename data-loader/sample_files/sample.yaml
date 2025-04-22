@@ -1,0 +1,26 @@
+dataset:
+  - db: "test"
+    collection:
+      name: "bar"
+      docs:
+        - { _id: 1, a: true }
+        - { _id: 2, a: false }
+        - { _id: 3, a: null }
+    schema:
+      {
+        bsonType: "object",
+        required: [ "_id", "a" ],
+        properties:
+          {
+            _id: { bsonType: "int" },
+            a:
+              {
+                anyOf:
+                  [
+                    { bsonType: "bool" },
+                    { bsonType: "null" },
+                  ]
+              }
+          },
+        additionalProperties: false
+      }

@@ -1,0 +1,43 @@
+{
+  "dataset": [
+    {
+      "db": "json_db",
+      "collection": {
+        "name": "foo",
+        "docs": [
+          {
+            "_id": 0,
+            "x": "a",
+            "y": 1
+          },
+          {
+            "_id": 1,
+            "x": "b"
+          }
+        ],
+        "indexes": [
+          {
+            "key": {
+              "x": -1
+            }
+          }
+        ]
+      },
+      "schema": {
+        "bsonType": "object",
+        "required": [ "_id", "x" ],
+        "properties": {
+          "_id": {
+            "bsonType": "int"
+          },
+          "x": {
+            "bsonType": "string"
+          },
+          "y": {
+            "bsonType": "int"
+          }
+        }
+      }
+    }
+  ]
+}

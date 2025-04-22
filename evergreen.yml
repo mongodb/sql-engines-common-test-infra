@@ -89,7 +89,7 @@ functions:
         working_dir: sql-engines-common-test-infra
         script: |
           ${prepare_shell}
-          rustfmt --check $(find . -not \( -path \./target -prune \) -name \*.rs)
+          rustfmt --check $(find . -not \( -path \./target -prune \) -name \*.rs) --edition 2021
 
   "check unused dependencies":
     - command: shell.exec

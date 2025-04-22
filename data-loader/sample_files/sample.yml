@@ -1,0 +1,59 @@
+dataset:
+  - db: "test"
+    collection:
+      name: "foo"
+      docs:
+        - { _id: 1, a: "yes" }
+        - { _id: 2, a: "no" }
+        - { _id: 3, a: "maybe" }
+    schema:
+      {
+        bsonType: "object",
+        required: [ "_id", "a" ],
+        properties:
+          {
+            _id: { bsonType: "int" },
+            a: { bsonType: "string" },
+          },
+        additionalProperties: false
+      }
+
+  - db: "other"
+    collection:
+      name: "idx"
+      docs:
+        - { _id: 1, b: 10 }
+        - { _id: 2, b: 1000 }
+        - { _id: 3, b: 100 }
+      indexes:
+        - { key: { b: 1 } }
+    schema:
+      {
+        bsonType: "object",
+        required: [ "_id", "b" ],
+        properties:
+          {
+            _id: { bsonType: "int" },
+            b: { bsonType: "int" },
+          },
+        additionalProperties: false
+      }
+
+  - db: "other"
+    view:
+      name: "idx_v"
+      view_on: "idx"
+      pipeline:
+        [
+          { $project: { _id: 0 } }
+        ]
+    schema:
+      {
+        bsonType: "object",
+        required: [ "b" ],
+        properties:
+          {
+            b: { bsonType: "int" },
+          },
+        additionalProperties: false
+      }
