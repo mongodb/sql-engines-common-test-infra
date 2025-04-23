@@ -54,6 +54,19 @@ functions:
     - command: expansions.update
       params:
         file: sql-engines-common-test-infra/expansions.yml
+    - command: expansions.update
+      params:
+        updates:
+          - key: working_dir
+            value: sql-engines-common-test-infra
+
+tasks:
+  - name: test-rust
+    commands:
+      - func: "install rust toolchain"
+      - func: "run rust tests"
+        vars:
+          description: "run rust unit tests"
 
 buildvariants:
   - name: static-analysis
