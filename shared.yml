@@ -1,0 +1,93 @@
+functions:
+  "install rust toolchain":
+    - command: shell.exec
+      params:
+        shell: bash
+        script: |
+          ${prepare_shell}
+
+          # install rustup from scratch
+          rm -rf ~/.rustup
+          curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path $DEFAULT_HOST_OPTIONS
+
+          echo --------- rustup show -----------
+          rustup show
+          echo ----- Rustup toolchain list -----
+          rustup toolchain list
+          echo --------- Cargo version ---------
+          cargo --version
+          echo ---------------------------------
+
+  "check clippy":
+    - command: shell.exec
+      type: test
+      params:
+        shell: bash
+        working_dir: sql-engines-common-test-infra
+        script: |
+          ${prepare_shell}
+          cargo clippy --all-targets -- -D warnings
+
+  "check rustfmt":
+    - command: shell.exec
+      type: test
+      params:
+        shell: bash
+        working_dir: sql-engines-common-test-infra
+        script: |
+          ${prepare_shell}
+          rustfmt --check $(find . -not \( -path \./target -prune \) -name \*.rs) --edition 2021
+
+  "check unused dependencies":
+    - command: shell.exec
+      type: test
+      params:
+        shell: bash
+        working_dir: sql-engines-common-test-infra
+        script: |
+          ${prepare_shell}
+          cargo install cargo-machete
+          cargo build --all-features
+          set +e
+          cargo machete
+          RETURN=$?
+          set -e
+          if [ $RETURN -ne 0 ]; then
+            >&2 echo "Unused dependencies found"
+            >&2 cargo machete
+            exit 1
+          fi
+
+  "run rust tests":
+    - command: shell.exec
+      type: test
+      params:
+        shell: bash
+        working_dir: sql-engines-common-test-infra
+        script: |
+          ${prepare_shell}
+          echo ${description}
+          cargo test ${cargo_test_flags}
+
+tasks:
+  - name: clippy
+    commands:
+      - func: "install rust toolchain"
+      - func: "check clippy"
+
+  - name: rustfmt
+    commands:
+      - func: "install rust toolchain"
+      - func: "check rustfmt"
+
+  - name: unused-dependencies
+    commands:
+      - func: "install rust toolchain"
+      - func: "check unused dependencies"
+
+  - name: test-rust
+    commands:
+      - func: "install rust toolchain"
+      - func: "run rust tests"
+        vars:
+          description: "run rust unit tests"
