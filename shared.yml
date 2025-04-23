@@ -79,7 +79,7 @@ functions:
       type: test
       params:
         shell: bash
-        working_dir: sql-engines-common-test-infra
+        working_dir: ${working_dir}
         script: |
           ${prepare_shell}
           echo ${description}
