@@ -53,7 +53,18 @@ functions:
           EOT
     - command: expansions.update
       params:
+        updates:
+          - key: working_dir
+            value: sql-engines-common-test-infra
         file: sql-engines-common-test-infra/expansions.yml
+
+tasks:
+  - name: test-rust
+    commands:
+      - func: "install rust toolchain"
+      - func: "run rust tests"
+        vars:
+          description: "run rust unit tests"
 
 buildvariants:
   - name: static-analysis
