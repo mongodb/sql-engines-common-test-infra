@@ -53,6 +53,34 @@ pub struct YamlTestCase<I, E, O> {
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NoOptions {}
 
+/// TestGenerator defines how a test should be generated. Implementors must provide a YamlFileType
+/// definition, in addition to the feature name and test template used to generate tests of the
+/// implementation's type. The trait provides a standard parse_yaml implementation that utilizes the
+/// implementors' YamlFileType definitions and the general parse_yaml_test_file function.
+pub trait TestGenerator {
+    /// The target type for parsing YAML files
+    type YamlTestCase: DeserializeOwned;
+
+    /// Gets the feature name to be used to guard the generated tests of this type
+    fn get_feature_name(&self) -> String;
+
+    /// Gets the test template to use to generate tests of this type
+    fn get_test_template(&self) -> String;
+
+    /// Parses the YAML file at path into the implementation's YamlFileType
+    fn parse_yaml(&self, path: &str) -> Result<YamlTestFile<Self::YamlTestCase>> {
+        parse_yaml_test_file(path)
+    }
+}
+
+/// A factory for creating TestGenerators. Implementors should know which test types they need to
+/// support and should have implementations of TestGenerator for each.
+pub trait TestGeneratorFactory {
+    /// Given a path to a test file, create the appropriate TestGenerator for handling
+    /// that file.
+    fn create_test_generator(&self, path: &str) -> impl TestGenerator;
+}
+
 /// Errors returned by this library.
 #[derive(Debug, Error)]
 pub enum Error {
@@ -71,4 +99,25 @@ pub fn parse_yaml_test_file<T: DeserializeOwned>(path: &str) -> Result<YamlTestF
     let test_file: YamlTestFile<T> = serde_yaml::from_reader(f)
         .map_err(|e| Error::CannotDeserializeYaml(path.to_string(), e))?;
     Ok(test_file)
+}
+
+/// generate_tests should be used in build scripts that need to generate individual Rust test cases
+/// for YAML-specified test cases. The arguments to this function are:
+///   - generated_dir_path: the path where the generated test files are written
+///   - generated_mod_path: the path where the generated mod file is written
+///   - test_dir_path: the path to the YAML test files (can contain subdirectories)
+///   - test_generator_factory: an implementation of the TestGeneratorFactory trait that can create
+///                             TestGenerator implementations that are appropriate for the tests in
+///                             the test_dir_path.
+///
+/// This function removes any files existing at the generated paths before generating and writing
+/// any new files. It finds all YAML files in the test directory path, including any YAML files in
+/// subdirectories nested at any depth.
+pub fn generate_tests(
+    _generated_dir_path: &str,
+    _generated_mod_path: &str,
+    _test_dir_path: &str,
+    _test_generator_factory: &impl TestGeneratorFactory,
+) {
+    todo!()
 }
