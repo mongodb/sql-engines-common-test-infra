@@ -1,4 +1,5 @@
 target/
+test-generator/generated_tests/
 .idea
 .DS_STORE
 .vscode

@@ -1,0 +1,22 @@
+#![cfg_attr(rustfmt, rustfmt_skip)]
+#![allow(clippy::all)]
+#![allow(non_snake_case, dead_code, unused_variables, unused_imports)]
+
+use crate::{{parse_yaml_test_file, test::parse_yaml_file::SampleTestCase, YamlTestFile}};
+use std::{{collections::HashSet, fs, io::Read, path::PathBuf, string::ToString, sync::Once}};
+
+static INIT: Once = Once::new();
+
+pub fn initialize_test() -> (&'static Client, &'static QueryYamlTestFile) {{
+    static mut TEST_FILE: Option<YamlTestFile<SampleTestCase>> = None;
+
+    INIT.call_once(|| {{
+        unsafe {{
+            TEST_FILE = Some(parse_yaml_test_file(PathBuf::from("{path}")).unwrap());
+        }}
+    }});
+
+    unsafe {{
+        TEST_FILE.as_ref().unwrap()
+    }}
+}}

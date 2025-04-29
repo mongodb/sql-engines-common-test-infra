@@ -1,0 +1,13 @@
+#[cfg(feature = "sample")]
+#[test]
+pub fn {name}() {{
+    let test_file = initialize_test();
+    let test = test_file.tests.get({index}).unwrap();
+
+    assert_eq!("test input", test.input);
+    assert!(test.expectations.expected_1.contains("expectation"));
+
+    if let Some(option_1) = test.options.option_1.as_ref() {{
+        assert!(option_1.contains("option"));
+    }}
+}}

@@ -91,7 +91,9 @@ pub trait TestGenerator {
 
     /// Generate a single test case from the current YAML file. The arguments are the generated test
     /// file to write to, the index of the test from the YAML file, and the test case itself from
-    /// the YAML file. Implementors have access to the underlying YamlTestCase type.
+    /// the YAML file. Implementors have access to the underlying YamlTestCase type. If implementors
+    /// want to use test case descriptions as test function names, it is advised they use this
+    /// library's `sanitize_description` function.
     fn generate_test_case(
         &self,
         generated_test_file: &mut File,
@@ -163,7 +165,7 @@ pub trait TestGeneratorFactory {
 
 /// parse_yaml_test_file deserializes the file at the provided path into a YamlTestFile of `T`s.
 /// <P: AsRef<Path>>
-pub(crate) fn parse_yaml_test_file<T: DeserializeOwned, P: AsRef<Path> + Clone>(
+pub fn parse_yaml_test_file<T: DeserializeOwned, P: AsRef<Path> + Clone>(
     path: P,
 ) -> Result<YamlTestFile<T>> {
     let path_name = path.clone().as_ref().to_string_lossy().to_string();
@@ -172,6 +174,19 @@ pub(crate) fn parse_yaml_test_file<T: DeserializeOwned, P: AsRef<Path> + Clone>(
     let test_file: YamlTestFile<T> =
         serde_yaml::from_reader(f).map_err(|e| Error::CannotDeserializeYaml(path_name, e))?;
     Ok(test_file)
+}
+
+/// sanitize_description sanitizes test names such that they may be used as function names in
+/// generated test files.
+pub fn sanitize_description(description: &str) -> String {
+    let mut description = description.replace([' ', '-', '(', ')', '\'', ',', '.', ';'], "_");
+    description = description.replace("=>", "arrow");
+    description = description.replace('$', "dollar_sign");
+    description = description.replace('/', "or");
+    description = description.replace('?', "question_mark");
+    description = description.replace('=', "equals");
+    description = description.replace('*', "star");
+    description.replace('|', "pipe_")
 }
 
 /// generate_tests should be used in build scripts that need to generate individual Rust test cases
