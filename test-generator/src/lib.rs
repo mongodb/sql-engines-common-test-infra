@@ -8,8 +8,9 @@ mod test;
 
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
-    fs::{self},
-    io,
+    fs::{self, read_dir, File, ReadDir},
+    io::{self, Write},
+    path::PathBuf,
 };
 use thiserror::Error;
 
@@ -53,6 +54,22 @@ pub struct YamlTestCase<I, E, O> {
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NoOptions {}
 
+/// Errors returned by this library.
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("unable to deserialize YAML file '{0:?}': '{1:?}")]
+    CannotDeserializeYaml(String, serde_yaml::Error),
+    #[error("{0}: {1:?}")]
+    Io(&'static str, io::Error),
+    #[error("encountered multiple errors: {0:?}")]
+    Multiple(Vec<Error>),
+    #[error("cannot create TestGenerator for unknown test type at path: {0}")]
+    UnknownTestType(String),
+}
+
+/// The Result type used by this library.
+pub type Result<T> = std::result::Result<T, Error>;
+
 /// TestGenerator defines how a test should be generated. Implementors must provide a YamlFileType
 /// definition, in addition to the feature name and test template used to generate tests of the
 /// implementation's type. The trait provides a standard parse_yaml implementation that utilizes the
@@ -71,31 +88,36 @@ pub trait TestGenerator {
     fn parse_yaml(&self, path: &str) -> Result<YamlTestFile<Self::YamlTestCase>> {
         parse_yaml_test_file(path)
     }
+
+    /// Generates a test file based on a path to a YAML file
+    fn generate_test_file(
+        &self,
+        _path: String,
+        _mod_file: &File,
+        _generated_dir_path: &str,
+    ) -> Result<()> {
+        todo!()
+        // todo:
+        //  1. write mod entry
+        //  2. create writable test file handle
+        //  3. parse file at this path
+        //  4. for each test:
+        //    4a. write test based on test-type-specific rules (based on impl)
+    }
 }
 
 /// A factory for creating TestGenerators. Implementors should know which test types they need to
 /// support and should have implementations of TestGenerator for each.
 pub trait TestGeneratorFactory {
-    /// Given a path to a test file, create the appropriate TestGenerator for handling
-    /// that file.
-    fn create_test_generator(&self, path: &str) -> impl TestGenerator;
+    /// Given a path to a test file, create the appropriate TestGenerator for handling that
+    /// file. Should return Error::UnknownTestType(path) if the implementation cannot create
+    /// a TestGenerator for the test type described by path.
+    fn create_test_generator(&self, path: String) -> Result<impl TestGenerator>;
 }
-
-/// Errors returned by this library.
-#[derive(Debug, Error)]
-pub enum Error {
-    #[error("unable to deserialize YAML file '{0:?}': '{1:?}")]
-    CannotDeserializeYaml(String, serde_yaml::Error),
-    #[error("failed to read file: {0:?}")]
-    InvalidFile(io::Error),
-}
-
-/// The Result type used by this library.
-pub type Result<T> = std::result::Result<T, Error>;
 
 /// parse_yaml_test_file deserializes the file at the provided path into a YamlTestFile of `T`s.
 pub fn parse_yaml_test_file<T: DeserializeOwned>(path: &str) -> Result<YamlTestFile<T>> {
-    let f = fs::File::open(path).map_err(Error::InvalidFile)?;
+    let f = File::open(path).map_err(|e| Error::Io("failed to open test file", e))?;
     let test_file: YamlTestFile<T> = serde_yaml::from_reader(f)
         .map_err(|e| Error::CannotDeserializeYaml(path.to_string(), e))?;
     Ok(test_file)
@@ -107,17 +129,103 @@ pub fn parse_yaml_test_file<T: DeserializeOwned>(path: &str) -> Result<YamlTestF
 ///   - generated_mod_path: the path where the generated mod file is written
 ///   - test_dir_path: the path to the YAML test files (can contain subdirectories)
 ///   - test_generator_factory: an implementation of the TestGeneratorFactory trait that can create
-///                             TestGenerator implementations that are appropriate for the tests in
-///                             the test_dir_path.
+///     TestGenerator implementations that are appropriate for the tests in the test_dir_path.
 ///
 /// This function removes any files existing at the generated paths before generating and writing
 /// any new files. It finds all YAML files in the test directory path, including any YAML files in
 /// subdirectories nested at any depth.
 pub fn generate_tests(
-    _generated_dir_path: &str,
-    _generated_mod_path: &str,
-    _test_dir_path: &str,
-    _test_generator_factory: &impl TestGeneratorFactory,
-) {
-    todo!()
+    generated_dir_path: &str,
+    generated_mod_path: &str,
+    test_dir_path: &str,
+    test_generator_factory: &impl TestGeneratorFactory,
+) -> Result<()> {
+    let remove = fs::remove_dir_all(generated_dir_path);
+    let create = fs::create_dir(generated_dir_path);
+    match (remove, create) {
+        (Ok(_), Ok(_)) => {}
+        // in this case, it may be the first time run so there is nothing to delete.
+        // No reason to panic here.
+        (Err(_), Ok(_)) => {}
+        (Ok(_), Err(why)) => {
+            return Err(Error::Io("failed to create generated test directory", why))
+        }
+        (Err(delete_err), Err(create_err)) => {
+            return Err(Error::Multiple(vec![
+                Error::Io("failed to delete generated test directory", delete_err),
+                Error::Io("failed to create generated test directory", create_err),
+            ]))
+        }
+    }
+
+    let mut mod_file = fs::OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(generated_mod_path)
+        .map_err(|e| Error::Io("failed to create or open generated mod file", e))?;
+    write!(mod_file, include_str!("templates/mod_header")).unwrap();
+
+    let test_dir =
+        read_dir(test_dir_path).map_err(|e| Error::Io("failed to read test directory", e))?;
+
+    traverse(
+        test_dir,
+        generated_dir_path,
+        &mod_file,
+        test_generator_factory,
+    )
+}
+
+/// traverse the test directory, finding all YAML files. Create a test file for each YAML file.
+fn traverse(
+    test_dir: ReadDir,
+    generated_dir_path: &str,
+    mod_file: &File,
+    test_generator_factory: &impl TestGeneratorFactory,
+) -> Result<()> {
+    for entry in test_dir {
+        let entry = entry.map_err(|e| Error::Io("failed to open test directory entry", e))?;
+
+        let file_type = entry
+            .file_type()
+            .map_err(|e| Error::Io("failed to get test directory entry file type", e))?;
+
+        let path = entry.path();
+
+        if file_type.is_dir() {
+            // Traverse subdirectories
+            let sub_dir =
+                read_dir(path).map_err(|e| Error::Io("failed to read test subdirectory", e))?;
+            traverse(
+                sub_dir,
+                generated_dir_path,
+                mod_file,
+                test_generator_factory,
+            )?;
+        } else if file_type.is_file() {
+            let ext = path.extension();
+            if ext == Some("yml".as_ref()) || ext == Some("yaml".as_ref()) {
+                // Process YAML files
+                let test_generator = test_generator_factory
+                    .create_test_generator(path.clone().to_string_lossy().to_string())?;
+                let normalized_path = normalize_path(path);
+                test_generator.generate_test_file(normalized_path, mod_file, generated_dir_path)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+/// normalize_path strips the path of unnecessary information and accounts for OS-specific encoding.
+/// This function is used for generating test file names.
+fn normalize_path(path: PathBuf) -> String {
+    path.into_os_string()
+        .into_string()
+        .unwrap()
+        .replace("../tests/", "")
+        .replace("../tests\\", "")
+        .replace('/', "_")
+        .replace("\\\\", "_")
+        .replace('\\', "_")
+        .replace(".yml", "")
 }
