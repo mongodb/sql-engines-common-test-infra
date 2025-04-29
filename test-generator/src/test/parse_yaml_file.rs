@@ -2,18 +2,18 @@ use crate::{parse_yaml_test_file, Result, YamlTestCase, YamlTestFile};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-struct TestExpectations {
-    expected_1: String,
-    expected_2: Option<String>,
+pub(crate) struct TestExpectations {
+    pub expected_1: String,
+    pub expected_2: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-struct TestOptions {
-    option_1: Option<String>,
-    option_2: Option<String>,
+pub(crate) struct TestOptions {
+    pub option_1: Option<String>,
+    pub option_2: Option<String>,
 }
 
-type SampleTestCase = YamlTestCase<String, TestExpectations, TestOptions>;
+pub(crate) type SampleTestCase = YamlTestCase<String, TestExpectations, TestOptions>;
 
 #[test]
 fn test_sample_file() {
@@ -72,7 +72,7 @@ fn test_sample_file() {
             },
         },
         SampleTestCase {
-            description: "Test with one option".to_string(),
+            description: "Test with two options".to_string(),
             skip_reason: None,
             input: "test input".to_string(),
             expectations: TestExpectations {
