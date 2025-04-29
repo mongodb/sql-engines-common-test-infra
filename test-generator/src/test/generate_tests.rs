@@ -13,7 +13,7 @@ impl TestGenerator for TestTestGenerator {
 
     fn generate_test_file_header(&self, generated_test_file: &mut File, _: String) -> Result<()> {
         // Note that the canonicalized path is absolute, which is obviously dependent on where the
-        // test is run, therefore we use the hard-coded string "test-path" for the path value.
+        // test is run, therefore we use the hard-coded string "test/path" for the path value.
         write!(
             generated_test_file,
             include_str!("./testdata/templates/sample_test_header"),

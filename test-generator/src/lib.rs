@@ -71,7 +71,7 @@ pub enum Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// TestGenerator defines how a Rust test file should be generated from a YAML test file.
-/// Implementors must provide a YamlFileType definition, in addition to implementations for writing
+/// Implementors must provide a YamlTestCase definition, in addition to implementations for writing
 /// the header of the test file and writing the body of the test file. The trait provides a standard
 /// parse_yaml method that utilizes the implementor's YamlTestCase definition. It also provides a
 /// generate_test_file method which handles the boilerplate code for writing a test file, and
@@ -164,7 +164,6 @@ pub trait TestGeneratorFactory {
 }
 
 /// parse_yaml_test_file deserializes the file at the provided path into a YamlTestFile of `T`s.
-/// <P: AsRef<Path>>
 pub fn parse_yaml_test_file<T: DeserializeOwned, P: AsRef<Path> + Clone>(
     path: P,
 ) -> Result<YamlTestFile<T>> {
