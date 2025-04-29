@@ -70,13 +70,24 @@ pub enum Error {
 /// The Result type used by this library.
 pub type Result<T> = std::result::Result<T, Error>;
 
-/// TestGenerator defines how a test should be generated. Implementors must provide a YamlFileType
-/// definition, in addition to the feature name and test template used to generate tests of the
-/// implementation's type. The trait provides a standard parse_yaml implementation that utilizes the
-/// implementors' YamlFileType definitions and the general parse_yaml_test_file function.
+/// TestGenerator defines how a Rust test file should be generated from a YAML test file.
+/// Implementors must provide a YamlFileType definition, in addition to implementations for writing
+/// the header of the test file and writing the body of the test file. The trait provides a standard
+/// parse_yaml method that utilizes the implementor's YamlTestCase definition. It also provides a
+/// generate_test_file method which handles the boilerplate code for writing a test file, and
+/// dispatches to the generate_test_file_header and generate_test_case methods for writing the
+/// actual test cases.
 pub trait TestGenerator {
-    /// The target type for parsing YAML files
+    /// The target type for parsing YAML files.
     type YamlTestCase: DeserializeOwned;
+
+    /// Write the appropriate header to the generated test file, given the canonicalized path to
+    /// the YAML test file.
+    fn generate_test_file_header(
+        &self,
+        generated_test_file: &mut File,
+        canonicalized_path: String,
+    ) -> Result<()>;
 
     /// Generate a single test case from the current YAML file. The arguments are the generated test
     /// file to write to, the index of the test from the YAML file, and the test case itself from
@@ -88,20 +99,12 @@ pub trait TestGenerator {
         test_case: &Self::YamlTestCase,
     ) -> Result<()>;
 
-    /// Write the appropriate header to the generated test file, given the canonicalized path to
-    ///  the YAML test file.
-    fn generate_test_file_header(
-        &self,
-        generated_test_file: &mut File,
-        canonicalized_path: String,
-    ) -> Result<()>;
-
-    /// Parses the YAML file at path into the implementation's YamlFileType
+    /// Parses the YAML file at path into the implementation's YamlFileType.
     fn parse_yaml(&self, path: PathBuf) -> Result<YamlTestFile<Self::YamlTestCase>> {
         parse_yaml_test_file(path)
     }
 
-    /// Generates a test file based on a path to a YAML file
+    /// Generates a Rust test file from a YAML test file.
     fn generate_test_file(
         &self,
         original_path: PathBuf,
@@ -160,7 +163,7 @@ pub trait TestGeneratorFactory {
 
 /// parse_yaml_test_file deserializes the file at the provided path into a YamlTestFile of `T`s.
 /// <P: AsRef<Path>>
-pub fn parse_yaml_test_file<T: DeserializeOwned, P: AsRef<Path> + Clone>(
+pub(crate) fn parse_yaml_test_file<T: DeserializeOwned, P: AsRef<Path> + Clone>(
     path: P,
 ) -> Result<YamlTestFile<T>> {
     let path_name = path.clone().as_ref().to_string_lossy().to_string();
