@@ -78,6 +78,8 @@ functions:
           echo --------- Cargo version ---------
           cargo --version
           echo ---------------------------------
+          
+          echo "[end of install func] PATH = $PATH"
 
   # This function executes cargo test with the provided flags via the
   # "cargo_test_flags argument, e.g. "-- --ignored", etc. Note that any
