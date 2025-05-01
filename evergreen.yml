@@ -27,7 +27,7 @@ timeout:
         ls -la
 
 include:
-  - filename: shared.yml
+  - filename: evergreen/configs/rust_util.yml
 
 pre:
   - func: "fetch source"

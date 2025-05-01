@@ -1,0 +1,170 @@
+# This file contains common Rust-related functions and tasks that are useful across multiple SQL
+# Engines Evergreen projects. The functions in this config file depend on one or more of the
+# following expansions:
+#  - prepare_shell - a script or sequence of commands to run before the function
+#  - release_version - the release version of the project using this config
+#  - triggered_by_git_tag - the name of the tag that triggered this version, if available
+#                         - provided automatically by Evergreen in certain circumstances
+#  - working_dir - the working directory in which a function should run
+
+functions:
+  # This function runs the clippy linter against a Rust project
+  "check clippy":
+    - command: shell.exec
+      type: test
+      params:
+        shell: bash
+        working_dir: ${working_dir}
+        script: |
+          ${prepare_shell}
+          cargo clippy --all-targets -- -D warnings
+
+  # This function enforces rustfmt against a Rust project using cargo fmt
+  "check rustfmt":
+    - command: shell.exec
+      type: test
+      params:
+        shell: bash
+        working_dir: ${working_dir}
+        script: |
+          ${prepare_shell}
+          cargo fmt --all -- --check
+
+  # This function ensures a Rust project does not contain unused dependencies
+  # using cargo-machete
+  "check unused dependencies":
+    - command: shell.exec
+      type: test
+      params:
+        shell: bash
+        working_dir: ${working_dir}
+        script: |
+          ${prepare_shell}
+
+          cargo install cargo-machete
+          cargo build --all-features
+          set +e
+          cargo machete
+          RETURN=$?
+          set -e
+          if [ $RETURN -ne 0 ]; then
+            >&2 echo "Unused dependencies found"
+            >&2 cargo machete
+            exit 1
+          fi
+
+  # This function installs Rust in a platform-independent manner
+  "install rust toolchain":
+    - command: shell.exec
+      params:
+        shell: bash
+        script: |
+          ${prepare_shell}
+
+          # make sure to use msvc toolchain rather than gnu, which is
+          # the default for cygwin
+          if [ "Windows_NT" == "$OS" ]; then
+              export HOST="x86_64-pc-windows-msvc"
+              export DEFAULT_HOST_OPTIONS="--default-host $HOST"
+              export DEFAULT_TOOLCHAIN="stable-$HOST"
+          fi
+
+          # install rustup from scratch
+          rm -rf ~/.rustup
+          curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path $DEFAULT_HOST_OPTIONS
+
+          # rustup installs into C:\Users\$USER instead of
+          # C:\home\$USER, so we symlink both .rustup and .cargo
+          if [ "Windows_NT" == "$OS" ]; then
+              ln -sf /cygdrive/c/Users/$USER/.rustup/toolchains/$DEFAULT_TOOLCHAIN ~/.rustup
+              ln -sf /cygdrive/c/Users/$USER/.cargo/ ~/.cargo
+              rustup toolchain install $DEFAULT_TOOLCHAIN
+              rustup default $DEFAULT_TOOLCHAIN
+          fi
+
+          echo --------- rustup show -----------
+          rustup show
+          echo ----- Rustup toolchain list -----
+          rustup toolchain list
+          echo --------- Cargo version ---------
+          cargo --version
+          echo ---------------------------------
+
+  # This function executes cargo test with the provided flags via the
+  # "cargo_test_flags argument, e.g. "-- --ignored", etc. Note that any
+  # integration set-up, such as deploying mongod or ADF and/or loading
+  # data should be done before invoking this function.
+  #
+  # Arguments:
+  #   - cargo_test_flags - flags passed to the `cargo test` command
+  #   - description - a description of the tests being executed
+  "run rust tests":
+    - command: shell.exec
+      type: test
+      params:
+        shell: bash
+        working_dir: ${working_dir}
+        script: |
+          ${prepare_shell}
+
+          echo ${description}
+          set +e
+          cargo test ${cargo_test_flags}
+          EXITCODE=$?
+          set -e
+          exit $EXITCODE
+
+  # This function sets and checks the package version for the argued package.
+  #
+  # Arguments:
+  #   - cargo_file - the path to the Cargo.toml file that is the source of the
+  #                  version
+  #   - name - the name of the package being set and checked
+  "set and check packages version":
+    - command: shell.exec
+      type: test
+      params:
+        shell: bash
+        working_dir: ${working_dir}
+        script: |
+          ${prepare_shell}
+
+          #no-op when not triggered by a tag
+          if [[ "${triggered_by_git_tag}" != "" ]]; then
+            cargo install cargo-edit
+            # we only release one project at a time, so setting the version on all Cargo.toml files is safe
+            cargo set-version ${release_version}
+          fi
+          cargo install cargo-get
+
+          # check all of the releasable packages in the monorepo to verify that whichever is being released has the correct version
+          CARGO_PKGS_VERSION=$(cargo get --entry="${cargo_file}" package.version)
+          if [[ "${triggered_by_git_tag}" == "" ]]; then
+            EXPECTED_RELEASE_VERSION="0.0.0"
+          else
+            EXPECTED_RELEASE_VERSION="${release_version}"
+          fi
+          if [[ "$CARGO_PKGS_VERSION" != "$EXPECTED_RELEASE_VERSION" ]]; then
+            >&2 echo "Expected version $EXPECTED_RELEASE_VERSION but got $CARGO_PKGS_VERSION for ${name}"
+            exit 1
+          fi
+
+# todo:
+#   - compile * (Rust)
+#   - run data-loader
+
+tasks:
+  - name: clippy
+    commands:
+      - func: "install rust toolchain"
+      - func: "check clippy"
+
+  - name: rustfmt
+    commands:
+      - func: "install rust toolchain"
+      - func: "check rustfmt"
+
+  - name: unused-dependencies
+    commands:
+      - func: "install rust toolchain"
+      - func: "check unused dependencies"
