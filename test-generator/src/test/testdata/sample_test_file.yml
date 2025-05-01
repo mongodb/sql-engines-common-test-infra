@@ -18,7 +18,7 @@ tests:
     option_1: "test option"
     expected_1: "test expectation"
 
-  - description: Test with one option
+  - description: Test with two options
     input: "test input"
     option_1: "first option"
     option_2: "second option"
