@@ -33,25 +33,14 @@ functions:
   # This function ensures a Rust project does not contain unused dependencies
   # using cargo-machete
   "check unused dependencies":
-    - command: shell.exec
-      type: test
+    - command: subprocess.exec
       params:
-        shell: bash
         working_dir: ${working_dir}
-        script: |
-          ${prepare_shell}
-
-          cargo install cargo-machete
-          cargo build --all-features
-          set +e
-          cargo machete
-          RETURN=$?
-          set -e
-          if [ $RETURN -ne 0 ]; then
-            >&2 echo "Unused dependencies found"
-            >&2 cargo machete
-            exit 1
-          fi
+        add_to_path:
+          - $HOME/.cargo/bin
+        binary: sh
+        args:
+          - ./evergreen/scripts/check_unused_dependencies.sh
 
   # This function installs Rust in a platform-independent manner
   "install rust toolchain":
