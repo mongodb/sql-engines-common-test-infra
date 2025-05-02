@@ -45,8 +45,11 @@ functions:
         shell: bash
         working_dir: sql-engines-common-test-infra
         script: |
-          export PATH="$HOME/.cargo/bin:$PATH"
+          CARGO_BIN="$HOME/.cargo/bin"
+          export PATH="$CARGO_BIN:$PATH"
           cat <<EOT > expansions.yml
+          CARGO_BIN: "$CARGO_BIN"
+          working_dir: sql-engines-common-test-infra
           prepare_shell: |
             set -o errexit
             export PATH="$PATH"
@@ -54,11 +57,6 @@ functions:
     - command: expansions.update
       params:
         file: sql-engines-common-test-infra/expansions.yml
-    - command: expansions.update
-      params:
-        updates:
-          - key: working_dir
-            value: sql-engines-common-test-infra
 
 tasks:
   - name: test-rust

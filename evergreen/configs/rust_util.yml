@@ -37,7 +37,7 @@ functions:
       params:
         working_dir: ${working_dir}
         add_to_path:
-          - $HOME/.cargo/bin
+          - ${CARGO_BIN}
         binary: sh
         args:
           - ./evergreen/scripts/check_unused_dependencies.sh

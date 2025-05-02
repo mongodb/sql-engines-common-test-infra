@@ -2,8 +2,6 @@
 
 set -o errexit
 
-echo "[script] PATH = $PATH"
-
 cargo install cargo-machete
 cargo build --all-features
 set +e
