@@ -108,9 +108,6 @@ functions:
         args:
           - ${script_dir}/run_rust_tests.sh
 
-# todo:
-#   - run data-loader
-
 tasks:
   - name: clippy
     commands:
