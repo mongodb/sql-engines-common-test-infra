@@ -10,25 +10,25 @@
 functions:
   # This function runs the clippy linter against a Rust project
   "check clippy":
-    - command: shell.exec
-      type: test
+    - command: subprocess.exec
       params:
-        shell: bash
         working_dir: ${working_dir}
-        script: |
-          ${prepare_shell}
-          cargo clippy --all-targets -- -D warnings
+        add_to_path:
+          - ${CARGO_BIN}
+        binary: sh
+        args:
+          - ./evergreen/scripts/check_clippy.sh
 
   # This function enforces rustfmt against a Rust project using cargo fmt
   "check rustfmt":
-    - command: shell.exec
-      type: test
+    - command: subprocess.exec
       params:
-        shell: bash
         working_dir: ${working_dir}
-        script: |
-          ${prepare_shell}
-          cargo fmt --all -- --check
+        add_to_path:
+          - ${CARGO_BIN}
+        binary: sh
+        args:
+          - ./evergreen/scripts/check_rustfmt.sh
 
   # This function ensures a Rust project does not contain unused dependencies
   # using cargo-machete
@@ -44,42 +44,14 @@ functions:
 
   # This function installs Rust in a platform-independent manner
   "install rust toolchain":
-    - command: shell.exec
+    - command: subprocess.exec
       params:
-        shell: bash
-        script: |
-          ${prepare_shell}
-
-          # make sure to use msvc toolchain rather than gnu, which is
-          # the default for cygwin
-          if [ "Windows_NT" == "$OS" ]; then
-              export HOST="x86_64-pc-windows-msvc"
-              export DEFAULT_HOST_OPTIONS="--default-host $HOST"
-              export DEFAULT_TOOLCHAIN="stable-$HOST"
-          fi
-
-          # install rustup from scratch
-          rm -rf ~/.rustup
-          curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path $DEFAULT_HOST_OPTIONS
-
-          # rustup installs into C:\Users\$USER instead of
-          # C:\home\$USER, so we symlink both .rustup and .cargo
-          if [ "Windows_NT" == "$OS" ]; then
-              ln -sf /cygdrive/c/Users/$USER/.rustup/toolchains/$DEFAULT_TOOLCHAIN ~/.rustup
-              ln -sf /cygdrive/c/Users/$USER/.cargo/ ~/.cargo
-              rustup toolchain install $DEFAULT_TOOLCHAIN
-              rustup default $DEFAULT_TOOLCHAIN
-          fi
-
-          echo --------- rustup show -----------
-          rustup show
-          echo ----- Rustup toolchain list -----
-          rustup toolchain list
-          echo --------- Cargo version ---------
-          cargo --version
-          echo ---------------------------------
-          
-          echo "[end of install func] PATH = $PATH"
+        working_dir: ${working_dir}
+        add_to_path:
+          - ${CARGO_BIN}
+        binary: sh
+        args:
+          - ./evergreen/scripts/install_rust_toolchain.sh
 
   # This function executes cargo test with the provided flags via the
   # "cargo_test_flags argument, e.g. "-- --ignored", etc. Note that any
@@ -90,55 +62,38 @@ functions:
   #   - cargo_test_flags - flags passed to the `cargo test` command
   #   - description - a description of the tests being executed
   "run rust tests":
-    - command: shell.exec
-      type: test
+    - command: subprocess.exec
       params:
-        shell: bash
         working_dir: ${working_dir}
-        script: |
-          ${prepare_shell}
-
-          echo ${description}
-          set +e
-          cargo test ${cargo_test_flags}
-          EXITCODE=$?
-          set -e
-          exit $EXITCODE
+        add_to_path:
+          - ${CARGO_BIN}
+        include_expansions_in_env:
+          - cargo_test_flags
+          - description
+        binary: sh
+        args:
+          - ./evergreen/scripts/run_rust_tests.sh
 
   # This function sets and checks the package version for the argued package.
   #
   # Arguments:
   #   - cargo_file - the path to the Cargo.toml file that is the source of the
   #                  version
-  #   - name - the name of the package being set and checked
+  #   - package_name - the name of the package being set and checked
   "set and check packages version":
-    - command: shell.exec
-      type: test
+    - command: subprocess.exec
       params:
-        shell: bash
         working_dir: ${working_dir}
-        script: |
-          ${prepare_shell}
-
-          #no-op when not triggered by a tag
-          if [[ "${triggered_by_git_tag}" != "" ]]; then
-            cargo install cargo-edit
-            # we only release one project at a time, so setting the version on all Cargo.toml files is safe
-            cargo set-version ${release_version}
-          fi
-          cargo install cargo-get
-
-          # check all of the releasable packages in the monorepo to verify that whichever is being released has the correct version
-          CARGO_PKGS_VERSION=$(cargo get --entry="${cargo_file}" package.version)
-          if [[ "${triggered_by_git_tag}" == "" ]]; then
-            EXPECTED_RELEASE_VERSION="0.0.0"
-          else
-            EXPECTED_RELEASE_VERSION="${release_version}"
-          fi
-          if [[ "$CARGO_PKGS_VERSION" != "$EXPECTED_RELEASE_VERSION" ]]; then
-            >&2 echo "Expected version $EXPECTED_RELEASE_VERSION but got $CARGO_PKGS_VERSION for ${name}"
-            exit 1
-          fi
+        add_to_path:
+          - ${CARGO_BIN}
+        include_expansions_in_env:
+          - cargo_file
+          - package_name
+          - release_version
+          - triggered_by_git_tag
+        binary: sh
+        args:
+          - ./evergreen/scripts/run_rust_tests.sh
 
 # todo:
 #   - compile * (Rust)
