@@ -1,5 +1,20 @@
+# This file contains common MongoDB-related functions and tasks that are useful across multiple
+# SQL Engines Evergreen projects. The functions in this config file depend on one or more of the
+# following expansions:
+#  - DRIVERS_TOOLS - path to the drivers-evergreen-tools directory (varies by repo)
+#  - MONGODB_BINARIES - path to mongodb binaries (varies by repo)
+#  - MONGO_ORCHESTRATION_HOME - path to mongo-orchestration (varies by repo)
+#  - PROJECT_DIRECTORY - path to project (varies by repo)
+#  - script_dir - path to the sql-engines-common-test-infra scripts (varies by repo)
+#  - working_dir - the working directory in which a function should run
 
 functions:
+  # Starts a mongodb deployment using drivers-evergreen-tools' mongo-orchestration
+  # tool.
+  #
+  # Arguments:
+  #   - TOPOLOGY - topology of deployment (often our projects just use "server")
+  #   - MONGODB_VERSION - the version to use (can use aliases such as "latest")
   "bootstrap mongo-orchestration":
     - command: subprocess.exec
       params:
@@ -8,36 +23,29 @@ functions:
           - ${DRIVERS_TOOLS}/.evergreen/run-orchestration.sh
         include_expansions_in_env:
           - DRIVERS_TOOLS
+          - MONGODB_BINARIES
           - TOPOLOGY
           - MONGODB_VERSION
-          - MONGODB_BINARIES
 
+  # Fetches the drivers-evergreen-tools repo as a resource
   "prepare resources":
     - command: subprocess.exec
       params:
-        working_dir: mongosql-rs
+        working_dir: ${working_dir}
         include_expansions_in_env:
           - DRIVERS_TOOLS
         binary: bash
         args:
-          - ./evergreen/fetch-drivers-tools.sh
+          - ${script_dir}/fetch_drivers_tools.sh
 
-  "stop mongo orchestration":
-    - command: shell.exec
-
+  # Stops a mongodb deployment started via "bootstrap mongo-orchestration"
+  "stop mongo-orchestration":
+    - command: subprocess.exec
       params:
+        binary: sh
         include_expansions_in_env:
           - DRIVERS_TOOLS
           - MONGO_ORCHESTRATION_HOME
           - PROJECT_DIRECTORY
-        script: |
-          ${PREPARE_SHELL}
-
-          cd ${MONGO_ORCHESTRATION_HOME}
-          # source the mongo-orchestration virtualenv if it exists
-          if [ -f venv/bin/activate ]; then
-            . venv/bin/activate
-          elif [ -f venv/Scripts/activate ]; then
-            . venv/Scripts/activate
-          fi
-          mongo-orchestration stop
+        args:
+          - ${script_dir}/stop_mongo_orchestration.sh
