@@ -8,6 +8,12 @@
 #  - triggered_by_git_tag - the name of the tag that triggered this version, if available
 #                         - provided automatically by Evergreen in certain circumstances
 #  - working_dir - the working directory in which a function should run
+#
+# Notably, this config file does not contain a common "compile" function for Rust projects. This
+# is because the various "compile *" functions across SQL Engines projects vary widely in the
+# pre-work done before calling `cargo build`, and sometimes even involve post-work after that.
+# Since the common code among compiling functions ultimately boils down to `cargo build ...`, we
+# choose not to include that here since it would be more overhead than it's worth.
 
 variables:
   - &rust_subprocess_default_params
@@ -17,7 +23,7 @@ variables:
       binary: sh
 
 functions:
-  # This function runs the clippy linter against a Rust project
+  # Runs the clippy linter against a Rust project
   "check clippy":
     - command: subprocess.exec
       type: test
@@ -26,7 +32,7 @@ functions:
         args:
           - ${script_dir}/check_clippy.sh
 
-  # This function enforces rustfmt against a Rust project using cargo fmt
+  # Enforces rustfmt against a Rust project using cargo fmt
   "check rustfmt":
     - command: subprocess.exec
       type: test
@@ -35,8 +41,7 @@ functions:
         args:
           - ${script_dir}/check_rustfmt.sh
 
-  # This function ensures a Rust project does not contain unused dependencies
-  # using cargo-machete
+  # Ensures a Rust project does not contain unused dependencies using cargo-machete
   "check unused dependencies":
     - command: subprocess.exec
       type: test
@@ -45,7 +50,7 @@ functions:
         args:
           - ${script_dir}/check_unused_dependencies.sh
 
-  # This function installs Rust in a platform-independent manner
+  # Installs Rust in a platform-independent manner
   "install rust toolchain":
     - command: subprocess.exec
       params:
@@ -53,10 +58,22 @@ functions:
         args:
           - ${script_dir}/install_rust_toolchain.sh
 
-  # This function executes cargo test with the provided flags via the
-  # "cargo_test_flags argument, e.g. "-- --ignored", etc. Note that any
-  # integration set-up, such as deploying mongod or ADF and/or loading
-  # data should be done before invoking this function.
+  # Runs the data-loader
+  #
+  # Arguments:
+  #   - data_loader_args - flags passed to the `cargo run --bin data-loader --` command
+  "run data loader":
+    - command: subprocess.exec
+      params:
+        <<: *rust_subprocess_default_params
+        include_expansions_in_env:
+          - data_loader_args
+        args:
+          - ${script_dir}/run_data_loader.sh
+
+  # Executes `cargo test` with the provided flags via the "cargo_test_flags" argument,
+  # e.g. "-- --ignored", etc. Note that any integration set-up, such as deploying mongod
+  # or ADF and/or loading data should be done before invoking this function.
   #
   # Arguments:
   #   - cargo_test_flags - flags passed to the `cargo test` command
@@ -72,7 +89,7 @@ functions:
         args:
           - ${script_dir}/run_rust_tests.sh
 
-  # This function sets and checks the package version for the argued package.
+  # Sets and checks the package version for the argued package.
   #
   # Arguments:
   #   - cargo_file - the path to the Cargo.toml file that is the source of the
@@ -92,7 +109,6 @@ functions:
           - ${script_dir}/run_rust_tests.sh
 
 # todo:
-#   - compile * (Rust)
 #   - run data-loader
 
 tasks:
