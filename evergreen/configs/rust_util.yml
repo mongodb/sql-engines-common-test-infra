@@ -20,6 +20,7 @@ functions:
   # This function runs the clippy linter against a Rust project
   "check clippy":
     - command: subprocess.exec
+      type: test
       params:
         <<: *rust_subprocess_default_params
         args:
@@ -28,6 +29,7 @@ functions:
   # This function enforces rustfmt against a Rust project using cargo fmt
   "check rustfmt":
     - command: subprocess.exec
+      type: test
       params:
         <<: *rust_subprocess_default_params
         args:
@@ -37,6 +39,7 @@ functions:
   # using cargo-machete
   "check unused dependencies":
     - command: subprocess.exec
+      type: test
       params:
         <<: *rust_subprocess_default_params
         args:
@@ -60,6 +63,7 @@ functions:
   #   - description - a description of the tests being executed
   "run rust tests":
     - command: subprocess.exec
+      type: test
       params:
         <<: *rust_subprocess_default_params
         include_expansions_in_env:
@@ -76,6 +80,7 @@ functions:
   #   - package_name - the name of the package being set and checked
   "set and check packages version":
     - command: subprocess.exec
+      type: test
       params:
         <<: *rust_subprocess_default_params
         include_expansions_in_env:
