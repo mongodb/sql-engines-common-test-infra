@@ -48,8 +48,9 @@ functions:
           CARGO_BIN="$HOME/.cargo/bin"
           export PATH="$CARGO_BIN:$PATH"
           cat <<EOT > expansions.yml
-          CARGO_BIN: "$CARGO_BIN"
+          cargo_bin: "$CARGO_BIN"
           working_dir: sql-engines-common-test-infra
+          script_dir: ./evergreen/scripts
           prepare_shell: |
             set -o errexit
             export PATH="$PATH"

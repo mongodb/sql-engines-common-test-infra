@@ -1,57 +1,54 @@
 # This file contains common Rust-related functions and tasks that are useful across multiple SQL
 # Engines Evergreen projects. The functions in this config file depend on one or more of the
 # following expansions:
+#  - cargo_bin - path to the cargo binary
 #  - prepare_shell - a script or sequence of commands to run before the function
 #  - release_version - the release version of the project using this config
+#  - script_dir - path to the sql-engines-common-test-infra scripts (varies by repo)
 #  - triggered_by_git_tag - the name of the tag that triggered this version, if available
 #                         - provided automatically by Evergreen in certain circumstances
 #  - working_dir - the working directory in which a function should run
+
+variables:
+  - &rust_subprocess_default_params
+      working_dir: ${working_dir}
+      add_to_path:
+        - ${cargo_bin}
+      binary: sh
 
 functions:
   # This function runs the clippy linter against a Rust project
   "check clippy":
     - command: subprocess.exec
       params:
-        working_dir: ${working_dir}
-        add_to_path:
-          - ${CARGO_BIN}
-        binary: sh
+        <<: *rust_subprocess_default_params
         args:
-          - ./evergreen/scripts/check_clippy.sh
+          - ${script_dir}/check_clippy.sh
 
   # This function enforces rustfmt against a Rust project using cargo fmt
   "check rustfmt":
     - command: subprocess.exec
       params:
-        working_dir: ${working_dir}
-        add_to_path:
-          - ${CARGO_BIN}
-        binary: sh
+        <<: *rust_subprocess_default_params
         args:
-          - ./evergreen/scripts/check_rustfmt.sh
+          - ${script_dir}/check_rustfmt.sh
 
   # This function ensures a Rust project does not contain unused dependencies
   # using cargo-machete
   "check unused dependencies":
     - command: subprocess.exec
       params:
-        working_dir: ${working_dir}
-        add_to_path:
-          - ${CARGO_BIN}
-        binary: sh
+        <<: *rust_subprocess_default_params
         args:
-          - ./evergreen/scripts/check_unused_dependencies.sh
+          - ${script_dir}/check_unused_dependencies.sh
 
   # This function installs Rust in a platform-independent manner
   "install rust toolchain":
     - command: subprocess.exec
       params:
-        working_dir: ${working_dir}
-        add_to_path:
-          - ${CARGO_BIN}
-        binary: sh
+        <<: *rust_subprocess_default_params
         args:
-          - ./evergreen/scripts/install_rust_toolchain.sh
+          - ${script_dir}/install_rust_toolchain.sh
 
   # This function executes cargo test with the provided flags via the
   # "cargo_test_flags argument, e.g. "-- --ignored", etc. Note that any
@@ -64,15 +61,12 @@ functions:
   "run rust tests":
     - command: subprocess.exec
       params:
-        working_dir: ${working_dir}
-        add_to_path:
-          - ${CARGO_BIN}
+        <<: *rust_subprocess_default_params
         include_expansions_in_env:
           - cargo_test_flags
           - description
-        binary: sh
         args:
-          - ./evergreen/scripts/run_rust_tests.sh
+          - ${script_dir}/run_rust_tests.sh
 
   # This function sets and checks the package version for the argued package.
   #
@@ -83,17 +77,14 @@ functions:
   "set and check packages version":
     - command: subprocess.exec
       params:
-        working_dir: ${working_dir}
-        add_to_path:
-          - ${CARGO_BIN}
+        <<: *rust_subprocess_default_params
         include_expansions_in_env:
           - cargo_file
           - package_name
           - release_version
           - triggered_by_git_tag
-        binary: sh
         args:
-          - ./evergreen/scripts/run_rust_tests.sh
+          - ${script_dir}/run_rust_tests.sh
 
 # todo:
 #   - compile * (Rust)
