@@ -1,0 +1,125 @@
+# This file contains common Rust-related functions and tasks that are useful across multiple SQL
+# Engines Evergreen projects. The functions in this config file depend on one or more of the
+# following expansions:
+#  - cargo_bin - path to the cargo binary
+#  - prepare_shell - a script or sequence of commands to run before the function
+#  - release_version - the release version of the project using this config
+#  - script_dir - path to the sql-engines-common-test-infra scripts (varies by repo)
+#  - triggered_by_git_tag - the name of the tag that triggered this version, if available
+#                         - provided automatically by Evergreen in certain circumstances
+#  - working_dir - the working directory in which a function should run
+#
+# Notably, this config file does not contain a common "compile" function for Rust projects. This
+# is because the various "compile *" functions across SQL Engines projects vary widely in the
+# pre-work done before calling `cargo build`, and sometimes even involve post-work after that.
+# Since the common code among compiling functions ultimately boils down to `cargo build ...`, we
+# choose not to include that here since it would be more overhead than it's worth.
+
+variables:
+  - &rust_subprocess_default_params
+      working_dir: ${working_dir}
+      add_to_path:
+        - ${cargo_bin}
+      binary: sh
+
+functions:
+  # Runs the clippy linter against a Rust project
+  "check clippy":
+    - command: subprocess.exec
+      type: test
+      params:
+        <<: *rust_subprocess_default_params
+        args:
+          - ${script_dir}/check_clippy.sh
+
+  # Enforces rustfmt against a Rust project using cargo fmt
+  "check rustfmt":
+    - command: subprocess.exec
+      type: test
+      params:
+        <<: *rust_subprocess_default_params
+        args:
+          - ${script_dir}/check_rustfmt.sh
+
+  # Ensures a Rust project does not contain unused dependencies using cargo-machete
+  "check unused dependencies":
+    - command: subprocess.exec
+      type: test
+      params:
+        <<: *rust_subprocess_default_params
+        args:
+          - ${script_dir}/check_unused_dependencies.sh
+
+  # Installs Rust in a platform-independent manner
+  "install rust toolchain":
+    - command: subprocess.exec
+      params:
+        <<: *rust_subprocess_default_params
+        args:
+          - ${script_dir}/install_rust_toolchain.sh
+
+  # Runs the data-loader
+  #
+  # Arguments:
+  #   - data_loader_args - flags passed to the `cargo run --bin data-loader --` command
+  "run data loader":
+    - command: subprocess.exec
+      params:
+        <<: *rust_subprocess_default_params
+        include_expansions_in_env:
+          - data_loader_args
+        args:
+          - ${script_dir}/run_data_loader.sh
+
+  # Executes `cargo test` with the provided flags via the "cargo_test_flags" argument,
+  # e.g. "-- --ignored", etc. Note that any integration set-up, such as deploying mongod
+  # or ADF and/or loading data should be done before invoking this function.
+  #
+  # Arguments:
+  #   - cargo_test_flags - flags passed to the `cargo test` command
+  #   - description - a description of the tests being executed
+  "run rust tests":
+    - command: subprocess.exec
+      type: test
+      params:
+        <<: *rust_subprocess_default_params
+        include_expansions_in_env:
+          - cargo_test_flags
+          - description
+        args:
+          - ${script_dir}/run_rust_tests.sh
+
+  # Sets and checks the package version for the argued package.
+  #
+  # Arguments:
+  #   - cargo_file - the path to the Cargo.toml file that is the source of the
+  #                  version
+  #   - package_name - the name of the package being set and checked
+  "set and check packages version":
+    - command: subprocess.exec
+      type: test
+      params:
+        <<: *rust_subprocess_default_params
+        include_expansions_in_env:
+          - cargo_file
+          - package_name
+          - release_version
+          - triggered_by_git_tag
+        args:
+          - ${script_dir}/run_rust_tests.sh
+
+tasks:
+  - name: clippy
+    commands:
+      - func: "install rust toolchain"
+      - func: "check clippy"
+
+  - name: rustfmt
+    commands:
+      - func: "install rust toolchain"
+      - func: "check rustfmt"
+
+  - name: unused-dependencies
+    commands:
+      - func: "install rust toolchain"
+      - func: "check unused dependencies"
