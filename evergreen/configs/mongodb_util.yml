@@ -49,3 +49,10 @@ functions:
           - PROJECT_DIRECTORY
         args:
           - ${script_dir}/stop_mongo_orchestration.sh
+
+  "generate sql-engines github token":
+    command: github.generate_token
+    params:
+      owner: 10gen
+      repo: mongohouse
+      expansion_name: github_token

@@ -27,6 +27,7 @@ timeout:
         ls -la
 
 include:
+  - filename: evergreen/configs/mongodb_util.yml
   - filename: evergreen/configs/rust_util.yml
 
 pre:
@@ -51,6 +52,7 @@ functions:
           cargo_bin: "$CARGO_BIN"
           working_dir: sql-engines-common-test-infra
           script_dir: ./evergreen/scripts
+          DRIVERS_TOOLS: "$HOME/drivers-evergreen-tools"
           prepare_shell: |
             set -o errexit
             export PATH="$PATH"
@@ -59,6 +61,31 @@ functions:
       params:
         file: sql-engines-common-test-infra/expansions.yml
 
+  "update orchestrator mongod port":
+    - command: subprocess.exec
+      params:
+        binary: bash
+        include_expansions_in_env:
+          - DRIVERS_TOOLS
+        working_dir: ${working_dir}
+        args:
+          - ${script_dir}/update_orchestrator_mongod_port.sh
+
+  "run run_adf.sh test":
+    - command: shell.exec
+      type: test
+      params:
+        shell: bash
+        env:
+          GITHUB_TOKEN: "${github_token}"
+        working_dir: sql-engines-common-test-infra
+        script: |
+          ${prepare_shell}
+      
+          # Test that run_adf.sh starts and stops successfully
+          ./test-environment/run_adf.sh start
+          ./test-environment/run_adf.sh stop
+
 tasks:
   - name: test-rust
     commands:
@@ -66,6 +93,15 @@ tasks:
       - func: "run rust tests"
         vars:
           description: "run rust unit tests"
+
+  - name: test-run-adf
+    commands:
+      - func: "prepare resources"
+      - func: "update orchestrator mongod port"
+      - func: "bootstrap mongo-orchestration"
+      - func: "generate sql-engines github token"
+      - func: "run run_adf.sh test"
+      - func: "stop mongo-orchestration"
 
 buildvariants:
   - name: static-analysis
@@ -81,3 +117,10 @@ buildvariants:
     run_on: [ubuntu1804-test]
     tasks:
       - name: test-rust
+      - name: test-run-adf
+
+  - name: ubuntu2204-run-adf-test
+    display_name: "Ubuntu 22.04 - run_adf.sh Tests"
+    run_on: [ ubuntu2204-large ]
+    tasks:
+      - name: test-run-adf
