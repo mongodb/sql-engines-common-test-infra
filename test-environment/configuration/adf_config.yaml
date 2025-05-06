@@ -10,7 +10,7 @@ execution:
   maxDocumentSize: 16MiB
   outToSchemaMemoryLimit: 5MiB
   computeModeMongod:
-    port: ${COMPUTE_MODE_MONGOD_PORT:=47017}
+    port: ${COMPUTE_MODE_MONGOD_PORT:=28017}
     exponentialRetry:
       maxAttempts: 1
   remote:
