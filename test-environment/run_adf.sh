@@ -69,9 +69,9 @@ fi
 MACHINE_ARCH=$(uname -m)
 LOCAL_INSTALL_DIR=$(pwd)/local_adf
 LOGS_PATH=$LOCAL_INSTALL_DIR/logs
-DB_CONFIG_PATH=$(pwd)/configuration/adf_db_config.json
+DB_CONFIG_PATH=$(pwd)/test-environment/configuration/adf_db_config.json
 # This config enables match filters after currentOp
-ADF_CONFIG_PATH=$(pwd)/configuration/adf_config.yaml
+ADF_CONFIG_PATH=$(pwd)/test-environment/configuration/adf_config.yaml
 MONGOD_PORT=28017
 MONGOHOUSED_PORT=27017
 START="start"
@@ -309,7 +309,6 @@ if [ $ARG = $START ]; then
   fi
 fi
 if [ $ARG = $STOP ]; then
-  manage_compute_node $STOP
   MONGOHOUSED_PID=$(< $TMP_DIR/${MONGOHOUSED}.pid)
   echo "Stopping $MONGOHOUSED, pid $MONGOHOUSED_PID"
 

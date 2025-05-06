@@ -7,7 +7,6 @@ agent:
 backend:
   bindAddr: localhost:8029
 execution:
-  agentOnly: true
   maxDocumentSize: 16MiB
   outToSchemaMemoryLimit: 5MiB
   computeModeMongod:

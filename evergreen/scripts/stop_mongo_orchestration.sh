@@ -11,4 +11,4 @@ elif [ -f venv/Scripts/activate ]; then
   . venv/Scripts/activate
 fi
 
-mongo-orchestration stop
+./drivers-orchestration stop

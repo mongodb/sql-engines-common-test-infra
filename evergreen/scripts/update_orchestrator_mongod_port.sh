@@ -7,6 +7,7 @@ if [[ -z "$DRIVERS_TOOLS" ]]; then
     exit 1
 fi
 
+OS_NAME=$(uname -s)
 # Determine the target port:
 # Use MDB_TEST_LOCAL_PORT if it's set and not empty, otherwise use DEFAULT_PORT.
 DEFAULT_PORT=28017
@@ -17,7 +18,10 @@ if [[ -z "$CONFIG_FILE" ]]; then
   CONFIG_FILE="basic.json"
 fi
 CONFIG_PATH="${DRIVERS_TOOLS}/.evergreen/orchestration/configs/servers/${CONFIG_FILE}"
-
+OS_NAME=$(uname -s)
+if [[ $OS_NAME =~ ^CYGWIN ]]; then
+  CONFIG_PATH="/cygdrive/c/$CONFIG_PATH"
+fi
 
 cp "$CONFIG_PATH" "$CONFIG_PATH.bak"
 

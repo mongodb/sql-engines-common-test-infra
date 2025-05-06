@@ -42,6 +42,7 @@ functions:
   "stop mongo-orchestration":
     - command: subprocess.exec
       params:
+        working_dir: ${working_dir}
         binary: sh
         include_expansions_in_env:
           - DRIVERS_TOOLS

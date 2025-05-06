@@ -48,11 +48,13 @@ functions:
         script: |
           CARGO_BIN="$HOME/.cargo/bin"
           export PATH="$CARGO_BIN:$PATH"
+          DRIVERS_TOOLS="$HOME/drivers-evergreen-tools"
           cat <<EOT > expansions.yml
           cargo_bin: "$CARGO_BIN"
           working_dir: sql-engines-common-test-infra
           script_dir: ./evergreen/scripts
-          DRIVERS_TOOLS: "$HOME/drivers-evergreen-tools"
+          DRIVERS_TOOLS: "$DRIVERS_TOOLS"
+          MONGO_ORCHESTRATION_HOME: "$DRIVERS_TOOLS/.evergreen/orchestration"
           prepare_shell: |
             set -o errexit
             export PATH="$PATH"
@@ -117,10 +119,16 @@ buildvariants:
     run_on: [ubuntu1804-test]
     tasks:
       - name: test-rust
-      - name: test-run-adf
 
   - name: ubuntu2204-run-adf-test
-    display_name: "Ubuntu 22.04 - run_adf.sh Tests"
-    run_on: [ ubuntu2204-large ]
+    display_name: "Ubuntu 22.04 - run_adf.sh Test"
+    run_on: [ ubuntu2204-small ]
     tasks:
       - name: test-run-adf
+
+  #  SQL-2814: Use mongo-orchestration, configuration paths need to be updated to work for Windows/cygwin
+  #  - name: windows-run-adf-test
+  #    display_name: "Windows - run_adf.sh Test"
+  #    run_on: [ windows-64-vs2019-small ]
+  #    tasks:
+  #      - name: test-run-adf
