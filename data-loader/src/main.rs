@@ -215,6 +215,8 @@ fn read_data_files(dir_path: String) -> Result<Vec<TestDataFile>> {
     for file in fs::read_dir(dir_path)? {
         let path = file?.path();
 
+        println!("\tReading file {path:?}");
+
         if let Some(ext) = path.extension() {
             // Only parse paths to '.y[a]ml' or '.json' files
             let test_data_file: TestDataFile = if ext == "yml" || ext == "yaml" {
@@ -280,17 +282,24 @@ async fn load_test_data(client: Client, test_data_files: Vec<TestDataFile>) -> R
             if let Some(c) = entry.collection {
                 let collection = db.collection::<Bson>(c.name.as_str());
 
-                println!(
-                    "\tAttempting to insert documents into {}.{}",
-                    entry.db, c.name
-                );
-                let res = collection.insert_many(c.docs).await?;
-                println!(
-                    "\tInserted {} documents into {}.{}",
-                    res.inserted_ids.len(),
-                    entry.db,
-                    c.name,
-                );
+                if c.docs.is_empty() {
+                    println!(
+                        "No documents specified for {}.{}, not inserting anything",
+                        entry.db, c.name
+                    );
+                } else {
+                    println!(
+                        "\tAttempting to insert documents into {}.{}",
+                        entry.db, c.name
+                    );
+                    let res = collection.insert_many(c.docs).await?;
+                    println!(
+                        "\tInserted {} documents into {}.{}",
+                        res.inserted_ids.len(),
+                        entry.db,
+                        c.name,
+                    );
+                }
 
                 // Also write indexes for this collection if any are specified.
                 if let Some(indexes) = c.indexes {
