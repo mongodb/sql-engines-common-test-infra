@@ -190,6 +190,7 @@ else
   exit 1
 fi
 
+# SQL-2814: Use the mongosh binary that is installed by mongo-orchestration/drivers-evergreen-tools
 install_mongosh() {
     (cd $LOCAL_INSTALL_DIR && curl -O $MONGOSH_DOWNLOAD_LINK)
     if [[ $OS =~ ^CYGWIN ]]; then
