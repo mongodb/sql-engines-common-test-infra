@@ -106,7 +106,7 @@ functions:
           - release_version
           - triggered_by_git_tag
         args:
-          - ${script_dir}/run_rust_tests.sh
+          - ${script_dir}/set_and_check_packages_version.sh
 
 tasks:
   - name: clippy
