@@ -80,22 +80,55 @@ MONGOD="mongod"
 MONGOHOUSED="mongohoused"
 TENANT_CONFIG="./testdata/config/inline_local/tenant-config.json"
 
+# Locate and validate mongosh executable
+MONGOSH_EXECUTABLE=""
+if [[ -n "$DRIVERS_TOOLS" ]]; then
+  # Try $DRIVERS_TOOLS first
+  MONGOSH_PATH="$DRIVERS_TOOLS/mongodb/bin/mongosh"
+  if [[ -x "$MONGOSH_PATH" ]]; then
+    MONGOSH_EXECUTABLE="$MONGOSH_PATH"
+  elif [[ "$OS" =~ ^CYGWIN && -x "$MONGOSH_PATH.exe" ]]; then
+    MONGOSH_EXECUTABLE="$MONGOSH_PATH.exe"
+  fi
+fi
+if [[ -z "$MONGOSH_EXECUTABLE" ]]; then
+  MONGOSH_EXECUTABLE=$(command -v mongosh 2>/dev/null || command -v mongosh.exe 2>/dev/null)
+fi
+if [[ -x "$MONGOSH_EXECUTABLE" ]]; then
+  "$MONGOSH_EXECUTABLE" --version &>/dev/null
+  MONGOSH="$MONGOSH_EXECUTABLE"
+else
+  echo "Error: mongosh not found or not executable" >&2
+  exit 1
+fi
+
 OS=$(uname)
 if [[ $OS =~ ^CYGWIN ]]; then
     TMP_DIR="C:\\temp\\run_adf"
 else
     TMP_DIR="/tmp/run_adf"
 fi
+# Set Variant needed for downloading mongosql library
+if [[ "$OS" == "Linux" ]]; then
+  distro=$(awk -F= '/^NAME/{print $2}' /etc/os-release)
+  if [[ "$distro" == "\"Red Hat Enterprise Linux\"" || "$distro" == "\"Red Hat Enterprise Linux Server\"" ]]; then
+    if [[ "$MACHINE_ARCH" == "aarch64" ]]; then
+      export VARIANT=rhel9
+    else
+      export VARIANT=rhel7
+    fi
+  elif [[ "$distro" == "\"Ubuntu\"" ]]; then
+    export VARIANT=ubuntu2204
+  elif [[ "$distro" == "\"Amazon Linux\"" && "$MACHINE_ARCH" == "aarch64" ]]; then
+    export VARIANT=amazon2
+  else
+    echo "$distro not supported"
+    exit 1
+  fi
+fi
+
 TIMEOUT=180
 JQ=$TMP_DIR/jq
-
-
-## OS Agnostic definitions
-MONGOSH_DOWNLOAD_BASE=https://downloads.mongodb.com/compass
-
-# Shared Linux mongosh
-MONGOSH_DOWNLOAD_LINUX_FILE=mongosh-1.8.0-linux-x64.tgz
-MONGOSH_DOWNLOAD_LINUX_ARM_FILE=mongosh-1.8.0-linux-arm64.tgz
 
 mkdir -p $LOCAL_INSTALL_DIR
 
@@ -111,7 +144,7 @@ check_procname() {
 }
 
 check_version() {
-  VERSION=`$MONGOSH_DOWNLOAD_DIR/bin/mongosh --port $1 --eval 'db.version()'`
+  VERSION=`$MONGOSH --port $1 --eval 'db.version()'`
   result=$?
   VERSION=$(echo $VERSION | tail -n 1)
   echo "check_version() output"
@@ -140,79 +173,26 @@ get_jq() {
   chmod +x $JQ
 }
 
+check_mongod() {
+  check_procname $MONGOD
+  process_check_result=$?
+  check_version $MONGOD_PORT
+  port_check_result=$?
+
+  if [[ $process_check_result -eq 0 ]] && [[ $port_check_result -eq 0 ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
 check_mongohoused() {
   check_version $MONGOHOUSED_PORT
   return $?
 }
 
-# check if mac or linux
-if [ $OS = "Linux" ]; then
-  distro=$(awk -F= '/^NAME/{print $2}' /etc/os-release)
-  if [ "$distro" = "\"Red Hat Enterprise Linux\"" ] ||
-    [ "$distro" = "\"Red Hat Enterprise Linux Server\"" ]; then
-    if [ "$MACHINE_ARCH" = "aarch64" ]; then
-      export VARIANT=rhel9
-      MONGOSH_DOWNLOAD_FILE=$MONGOSH_DOWNLOAD_LINUX_ARM_FILE
-    else
-      export VARIANT=rhel7
-      MONGOSH_DOWNLOAD_FILE=$MONGOSH_DOWNLOAD_LINUX_FILE
-    fi
-    MONGOSH_DOWNLOAD_LINK=$MONGOSH_DOWNLOAD_BASE/$MONGOSH_DOWNLOAD_FILE
-  elif [ "$distro" = "\"Ubuntu\"" ]; then
-    export VARIANT=ubuntu2204
-    if [ "$MACHINE_ARCH" = "aarch64" ]; then
-      MONGOSH_DOWNLOAD_FILE=$MONGOSH_DOWNLOAD_LINUX_ARM_FILE
-    else
-      MONGOSH_DOWNLOAD_FILE=$MONGOSH_DOWNLOAD_LINUX_FILE
-    fi
-    MONGOSH_DOWNLOAD_LINK=$MONGOSH_DOWNLOAD_BASE/$MONGOSH_DOWNLOAD_FILE
-  elif [ "$distro" = "\"Amazon Linux\"" ] && [ "$MACHINE_ARCH" = "aarch64" ]; then
-    export VARIANT=amazon2
-    MONGOSH_DOWNLOAD_FILE=$MONGOSH_DOWNLOAD_LINUX_ARM_FILE
-    MONGOSH_DOWNLOAD_LINK=$MONGOSH_DOWNLOAD_BASE/$MONGOSH_DOWNLOAD_FILE
-  else
-    echo ${distro} not supported
-    exit 1
-  fi
-elif [ $OS = "Darwin" ]; then
-  if [ "$MACHINE_ARCH" = "x86_64" ]; then
-    MONGOSH_DOWNLOAD_FILE=$MONGOSH_DOWNLOAD_MAC_FILE
-    MONGOSH_DOWNLOAD_LINK=$MONGOSH_DOWNLOAD_BASE/$MONGOSH_DOWNLOAD_FILE
-  else
-    MONGOSH_DOWNLOAD_FILE=$MONGOSH_DOWNLOAD_MAC_FILE_ARM
-    MONGOSH_DOWNLOAD_LINK=$MONGOSH_DOWNLOAD_BASE/$MONGOSH_DOWNLOAD_FILE
-  fi
-elif [[ $OS =~ ^CYGWIN ]]; then
-  MONGOSH_DOWNLOAD_FILE=$MONGOSH_DOWNLOAD_WINDOWS_FILE
-  MONGOSH_DOWNLOAD_LINK=$MONGOSH_DOWNLOAD_BASE/$MONGOSH_DOWNLOAD_FILE
-else
-  echo $(uname) not supported
-  exit 1
-fi
-
-# SQL-2814: Use the mongosh binary that is installed by mongo-orchestration/drivers-evergreen-tools
-install_mongosh() {
-    (cd $LOCAL_INSTALL_DIR && curl -O $MONGOSH_DOWNLOAD_LINK)
-    if [[ $OS =~ ^CYGWIN ]]; then
-      unzip -qo $LOCAL_INSTALL_DIR/$MONGOSH_DOWNLOAD_FILE -d $LOCAL_INSTALL_DIR 2> /dev/null
-
-      # Obtain unzipped directory name
-      MONGOSH_UNZIP_DIR=$(unzip -lq $LOCAL_INSTALL_DIR/$MONGOSH_DOWNLOAD_FILE | grep mongosh.exe | tr -s ' ' \
-              | cut -d ' ' -f 5 | cut -d/ -f1)
-      chmod -R +x $LOCAL_INSTALL_DIR/$MONGOSH_UNZIP_DIR/bin/
-      echo $LOCAL_INSTALL_DIR/$MONGOSH_UNZIP_DIR
-    elif [ $OS = "Darwin" ]; then
-      unzip -qo $LOCAL_INSTALL_DIR/$MONGOSH_DOWNLOAD_FILE -d $LOCAL_INSTALL_DIR 2> /dev/null
-      echo $LOCAL_INSTALL_DIR/${MONGOSH_DOWNLOAD_FILE:0:$((${#MONGOSH_DOWNLOAD_FILE} - 4))}
-    else
-      tar zxf $LOCAL_INSTALL_DIR/$MONGOSH_DOWNLOAD_FILE --directory $LOCAL_INSTALL_DIR
-      echo $LOCAL_INSTALL_DIR/${MONGOSH_DOWNLOAD_FILE:0:$((${#MONGOSH_DOWNLOAD_FILE} - 4))}
-    fi
-}
-
-MONGOSH_DOWNLOAD_DIR=$(install_mongosh)
-
 if [ $ARG = $START ]; then
+  check_mongod
   check_mongohoused
   if [[ $? -ne 0 ]]; then
     echo "Starting $MONGOHOUSED"

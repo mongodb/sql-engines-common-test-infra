@@ -13,4 +13,10 @@ rm -rf $DRIVERS_TOOLS
 git config --global --get-regexp '^url\.' | while read -r key _; do
     git config --global --unset "$key"
 done
-git clone https://github.com/mongodb-labs/drivers-evergreen-tools.git $DRIVERS_TOOLS
+
+DRIVERS_TOOLS_PATH=$DRIVERS_TOOLS
+if [ "Windows_NT" == "$OS" ]; then
+  DRIVERS_TOOLS_PATH=$(cygpath -m "$DRIVERS_TOOLS")
+fi
+git clone https://github.com/mongodb-labs/drivers-evergreen-tools.git $DRIVERS_TOOLS_PATH
+

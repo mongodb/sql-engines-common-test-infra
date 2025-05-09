@@ -80,6 +80,8 @@ functions:
         shell: bash
         env:
           GITHUB_TOKEN: "${github_token}"
+        include_expansions_in_env:
+          - DRIVERS_TOOLS
         working_dir: sql-engines-common-test-infra
         script: |
           ${prepare_shell}
@@ -120,15 +122,15 @@ buildvariants:
     tasks:
       - name: test-rust
 
+  - name: windows
+    display_name: "Windows"
+    run_on: [windows-64-vsMulti-small]
+    tasks:
+      - name: test-rust
+      - name: test-run-adf
+
   - name: ubuntu2204-run-adf-test
     display_name: "Ubuntu 22.04 - run_adf.sh Test"
     run_on: [ ubuntu2204-small ]
     tasks:
       - name: test-run-adf
-
-  #  SQL-2814: Use mongo-orchestration, configuration paths need to be updated to work for Windows/cygwin
-  #  - name: windows-run-adf-test
-  #    display_name: "Windows - run_adf.sh Test"
-  #    run_on: [ windows-64-vs2019-small ]
-  #    tasks:
-  #      - name: test-run-adf
