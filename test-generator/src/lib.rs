@@ -63,6 +63,8 @@ pub enum Error {
     Io(String, io::Error),
     #[error("encountered multiple errors: {0:?}")]
     Multiple(Vec<Error>),
+    #[error("unhandled test type encountered at path: {0}")]
+    UnhandledTestType(String),
     #[error("cannot create TestGenerator for unknown test type at path: {0}")]
     UnknownTestType(String),
 }
@@ -291,15 +293,27 @@ fn traverse(
             let ext = path.extension();
             if ext == Some("yml".as_ref()) || ext == Some("yaml".as_ref()) {
                 // Process YAML files
-                let test_generator = test_generator_factory
-                    .create_test_generator(path.clone().to_string_lossy().to_string())?;
-                let normalized_path = normalize_path(path.clone());
-                test_generator.generate_test_file(
-                    path,
-                    normalized_path,
-                    mod_file,
-                    generated_dir_path,
-                )?;
+                let test_generator_res = test_generator_factory
+                    .create_test_generator(path.clone().to_string_lossy().to_string());
+                match test_generator_res {
+                    // Tolerate unhandled test types by simply skipping them. Explicitly unhandled
+                    // test types are not meant to stop test generation.
+                    Err(Error::UnhandledTestType(utt)) => {
+                        println!("Skipping unknown test type '{utt}'")
+                    }
+                    // Any other error, for example UnknownTestType, should terminate generation.
+                    Err(e) => return Err(e),
+                    // Otherwise, generate the test file.
+                    Ok(test_generator) => {
+                        let normalized_path = normalize_path(path.clone());
+                        test_generator.generate_test_file(
+                            path,
+                            normalized_path,
+                            mod_file,
+                            generated_dir_path,
+                        )?;
+                    }
+                }
             }
         }
     }
