@@ -63,16 +63,6 @@ functions:
       params:
         file: sql-engines-common-test-infra/expansions.yml
 
-  "update orchestrator mongod port":
-    - command: subprocess.exec
-      params:
-        binary: bash
-        include_expansions_in_env:
-          - DRIVERS_TOOLS
-        working_dir: ${working_dir}
-        args:
-          - ${script_dir}/update_orchestrator_mongod_port.sh
-
   "run run_adf.sh test":
     - command: shell.exec
       type: test
