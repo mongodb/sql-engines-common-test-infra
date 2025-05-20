@@ -52,16 +52,6 @@ functions:
       params:
         file: sql-engines-common-test-infra/expansions.yml
 
-  "update orchestrator mongod port":
-    - command: subprocess.exec
-      params:
-        binary: bash
-        include_expansions_in_env:
-          - DRIVERS_TOOLS
-        working_dir: ${working_dir}
-        args:
-          - ${script_dir}/update_orchestrator_mongod_port.sh
-
   "run run_adf.sh test":
     - command: shell.exec
       type: test
@@ -69,6 +59,8 @@ functions:
         shell: bash
         env:
           GITHUB_TOKEN: "${github_token}"
+        include_expansions_in_env:
+          - DRIVERS_TOOLS
         working_dir: sql-engines-common-test-infra
         script: |
           ${prepare_shell}
@@ -111,19 +103,13 @@ buildvariants:
 
   - name: windows
     display_name: "Windows"
-    run_on: [windows-64-vs2019-large]
+    run_on: [windows-64-vsMulti-small]
     tasks:
       - name: test-rust
+      - name: test-run-adf
 
   - name: ubuntu2204-run-adf-test
     display_name: "Ubuntu 22.04 - run_adf.sh Test"
     run_on: [ ubuntu2204-small ]
     tasks:
       - name: test-run-adf
-
-  #  SQL-2814: Use mongo-orchestration, configuration paths need to be updated to work for Windows/cygwin
-  #  - name: windows-run-adf-test
-  #    display_name: "Windows - run_adf.sh Test"
-  #    run_on: [ windows-64-vs2019-small ]
-  #    tasks:
-  #      - name: test-run-adf

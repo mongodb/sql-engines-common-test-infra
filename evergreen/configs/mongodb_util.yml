@@ -57,3 +57,13 @@ functions:
       owner: 10gen
       repo: mongohouse
       expansion_name: github_token
+
+  "update orchestrator mongod port":
+    - command: subprocess.exec
+      params:
+        binary: bash
+        include_expansions_in_env:
+          - DRIVERS_TOOLS
+        working_dir: ${working_dir}
+        args:
+          - ${script_dir}/update_orchestrator_mongod_port.sh
