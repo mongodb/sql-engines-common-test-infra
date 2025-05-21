@@ -1,0 +1,4 @@
+tests:
+  - description: Alt test
+    input: "alt input"
+    expected: "alt expected"
