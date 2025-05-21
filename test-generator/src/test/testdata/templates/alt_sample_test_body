@@ -1,0 +1,9 @@
+#[cfg(feature = "alt")]
+#[test]
+pub fn {name}() {{
+    let test_file = initialize_test();
+    let test = test_file.tests.get({index}).unwrap();
+
+    assert_eq!("alt input", test.input);
+    assert_eq!("alt expected", test.expectations.expected);
+}}

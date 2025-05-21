@@ -73,16 +73,12 @@ pub enum Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// TestGenerator defines how a Rust test file should be generated from a YAML test file.
-/// Implementors must provide a YamlTestCase definition, in addition to implementations for writing
-/// the header of the test file and writing the body of the test file. The trait provides a standard
-/// parse_yaml method that utilizes the implementor's YamlTestCase definition. It also provides a
-/// generate_test_file method which handles the boilerplate code for writing a test file, and
-/// dispatches to the generate_test_file_header and generate_test_case methods for writing the
-/// actual test cases.
+///
+/// Implementors must define how to write a test file header and how to write a test file body. The
+/// trait provides a standard generate_test_file method which handle boilerplate code for writing a
+/// test file, and dispatches to the generate_test_file_header and generate_test_file_body methods
+/// for writing the actual test cases.
 pub trait TestGenerator {
-    /// The target type for parsing YAML files.
-    type YamlTestCase: DeserializeOwned;
-
     /// Write the appropriate header to the generated test file, given the canonicalized path to
     /// the YAML test file.
     fn generate_test_file_header(
@@ -91,22 +87,17 @@ pub trait TestGenerator {
         canonicalized_path: String,
     ) -> Result<()>;
 
-    /// Generate a single test case from the current YAML file. The arguments are the generated test
-    /// file to write to, the index of the test from the YAML file, and the test case itself from
-    /// the YAML file. Implementors have access to the underlying YamlTestCase type. If implementors
-    /// want to use test case descriptions as test function names, it is advised they use this
-    /// library's `sanitize_description` function.
-    fn generate_test_case(
+    /// Generates the test cases for the current YAML file. The arguments are the generated test
+    /// file to write to and the path to the YAML test file. Implementors should parse the test file
+    /// into the appropriate YamlTestFile<...> type using this library's `parse_yaml_test_file`
+    /// function, and then write each test case to the generated test file. If implementors want to
+    /// use test case descriptions as test function names, it is advised they use this library's
+    /// `sanitize_description` function.
+    fn generate_test_file_body(
         &self,
         generated_test_file: &mut File,
-        index: usize,
-        test_case: &Self::YamlTestCase,
+        original_path: PathBuf,
     ) -> Result<()>;
-
-    /// Parses the YAML file at path into the implementation's YamlFileType.
-    fn parse_yaml(&self, path: PathBuf) -> Result<YamlTestFile<Self::YamlTestCase>> {
-        parse_yaml_test_file(path)
-    }
 
     /// Generates a Rust test file from a YAML test file.
     fn generate_test_file(
@@ -143,16 +134,8 @@ pub trait TestGenerator {
             .to_string();
         self.generate_test_file_header(&mut generated_test_file, canonicalized_path)?;
 
-        // Step 4: Parse the test file using this TestGenerator's YamlTestCase type.
-        let parsed_test_file = self.parse_yaml(original_path)?;
-
-        // Step 5: Write the parsed YAML tests as Rust tests in the generated file, using this
-        // test type's template and feature name.
-        for (index, test) in parsed_test_file.tests.iter().enumerate() {
-            self.generate_test_case(&mut generated_test_file, index, test)?
-        }
-
-        Ok(())
+        // Step 4: Generate test cases for the file
+        self.generate_test_file_body(&mut generated_test_file, original_path)
     }
 }
 
@@ -162,7 +145,7 @@ pub trait TestGeneratorFactory {
     /// Given a path to a test file, create the appropriate TestGenerator for handling that
     /// file. Should return Error::UnknownTestType(path) if the implementation cannot create
     /// a TestGenerator for the test type described by path.
-    fn create_test_generator(&self, path: String) -> Result<impl TestGenerator>;
+    fn create_test_generator(&self, path: String) -> Result<Box<dyn TestGenerator>>;
 }
 
 /// parse_yaml_test_file deserializes the file at the provided path into a YamlTestFile of `T`s.
@@ -299,7 +282,7 @@ fn traverse(
                     // Tolerate unhandled test types by simply skipping them. Explicitly unhandled
                     // test types are not meant to stop test generation.
                     Err(Error::UnhandledTestType(utt)) => {
-                        println!("Skipping unknown test type '{utt}'")
+                        println!("Skipping unhandled test type '{utt}'")
                     }
                     // Any other error, for example UnknownTestType, should terminate generation.
                     Err(e) => return Err(e),
