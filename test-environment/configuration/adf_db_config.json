@@ -64,5 +64,35 @@
       }
     ],
     "views" : null
+  },
+  {
+    "name" : "supplies",
+    "collections" : [
+      {
+        "name": "*",
+        "dataSources" : [
+          {
+            "storeName" : "localmongo",
+            "database" : "supplies"
+          }
+        ]
+      }
+    ],
+    "views" : null
+  },
+  {
+    "name" : "reports",
+    "collections" : [
+      {
+        "name": "*",
+        "dataSources" : [
+          {
+            "storeName" : "localmongo",
+            "database" : "reports"
+          }
+        ]
+      }
+    ],
+    "views" : null
   }
 ]
