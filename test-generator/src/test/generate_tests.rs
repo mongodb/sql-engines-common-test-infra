@@ -141,8 +141,8 @@ pub mod src_test_testdata_alt_sample_test_file;
 
     let expected_generated_mod_file_option_2 = r#"#![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(clippy::all)]
-pub mod src_test_testdata_sample_test_file;
 pub mod src_test_testdata_alt_sample_test_file;
+pub mod src_test_testdata_sample_test_file;
 "#;
 
     let actual_generated_mod_file = fs::read_to_string("./generated_tests/mod.rs")
