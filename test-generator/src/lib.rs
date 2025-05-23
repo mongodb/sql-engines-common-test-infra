@@ -40,7 +40,7 @@ pub struct YamlTestCase<I, E, O> {
     pub description: String,
     pub skip_reason: Option<String>,
 
-    #[serde(alias = "query", alias = "test_definition")]
+    #[serde(alias = "query", alias = "test_definition", alias = "pipeline")]
     pub input: I,
 
     #[serde(flatten)]
