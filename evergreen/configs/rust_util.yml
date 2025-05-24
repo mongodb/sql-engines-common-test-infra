@@ -20,6 +20,8 @@ variables:
       working_dir: ${working_dir}
       add_to_path:
         - ${cargo_bin}
+      env:
+        CARGO_NET_GIT_FETCH_WITH_CLI: "true"
       binary: sh
 
 functions:
