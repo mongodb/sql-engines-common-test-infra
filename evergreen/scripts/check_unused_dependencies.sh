@@ -3,7 +3,6 @@
 set -o errexit
 
 cargo install cargo-machete
-cargo build --all-features
 set +e
 cargo machete
 RETURN=$?
