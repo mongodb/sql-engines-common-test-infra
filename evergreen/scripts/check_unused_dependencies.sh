@@ -3,6 +3,7 @@
 set -o errexit
 
 cargo install cargo-machete
+cargo build
 set +e
 cargo machete
 RETURN=$?
