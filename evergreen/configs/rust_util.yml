@@ -48,6 +48,17 @@ functions:
   # Arguments:
   #   - skip_machete_build - indicate whether to skip building before running `cargo machete`
   "check unused dependencies":
+    - command: shell.exec
+      type: test
+      params:
+        shell: bash
+        working_dir: ${working_dir}
+        script: |
+          echo "Hello, this is the first command."
+          echo "I see the expansion 'skip_machete_build' has value ${skip_machete_build}."
+          echo "And I see the expansion 'test_var' has value ${test_var}."
+          echo "Also, globally, I see the expansions 'cargo_bin' (${cargo_bin}) and 'PRODUCT_NAME' (${PRODUCT_NAME})."
+          echo "Good luck on the next command."
     - command: subprocess.exec
       type: test
       params:
