@@ -3,7 +3,12 @@
 set -o errexit
 
 cargo install cargo-machete
-cargo build $machete_build_flags
+if [ $skip_machete_build != "" ]; then
+  echo "Skipping build step"
+else
+  echo "Building before cargo machete"
+  cargo build
+fi
 set +e
 cargo machete
 RETURN=$?
