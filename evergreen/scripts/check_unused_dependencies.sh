@@ -2,6 +2,9 @@
 
 set -o errexit
 
+echo "In check_unused_dependencies.sh script with value:"
+echo "skip_machete_build = $skip_machete_build"
+
 cargo install cargo-machete
 if [ $skip_machete_build != "" ]; then
   echo "Skipping build step"
