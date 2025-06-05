@@ -22,7 +22,7 @@ variables:
         - ${cargo_bin}
       env:
         CARGO_NET_GIT_FETCH_WITH_CLI: "true"
-      binary: sh
+      binary: bash
 
 functions:
   # Runs the clippy linter against a Rust project
