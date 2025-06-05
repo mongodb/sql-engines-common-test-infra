@@ -62,13 +62,13 @@ functions:
           echo "Also, globally, I see the expansions 'cargo_bin' (${cargo_bin}) and 'PRODUCT_NAME' (${PRODUCT_NAME})."
           cargo version
           echo "Good luck on the next command."
-          cat <<EOT >> expansions.yml
-          skip_machete_build: true
-          EOT
-          cat expansions.yml
     - command: expansions.update
       params:
-        file: ${working_dir}/expansions.yml
+        updates:
+        - key: skip_machete_build
+          value: "true"
+        - key: extra_expansion
+          value: "haha"
     - command: subprocess.exec
       type: test
       params:
