@@ -1,7 +1,7 @@
 
 # Put our own installation of Cargo first in the path to make sure this is the one used.
 # Otherwise, on MacOs it will use the version installed with Brew which is not as recent.
-if [ "Windows_NT" == "$OS" ]; then
+if [[ "Windows_NT" == "$OS" ]]; then
   export CARGO_BIN="$HOME/.rustup/bin:$HOME/.cargo/bin"
 else
   export CARGO_BIN="$HOME/.cargo/bin"
