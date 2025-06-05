@@ -44,11 +44,16 @@ functions:
           - ${script_dir}/check_rustfmt.sh
 
   # Ensures a Rust project does not contain unused dependencies using cargo-machete
+  #
+  # Arguments:
+  #   - machete_build_flags - flags for `cargo build` call that runs before `cargo machete`
   "check unused dependencies":
     - command: subprocess.exec
       type: test
       params:
         <<: *rust_subprocess_default_params
+        include_expansions_in_env:
+          - machete_build_flags
         args:
           - ${script_dir}/check_unused_dependencies.sh
 
