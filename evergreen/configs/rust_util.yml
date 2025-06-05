@@ -53,11 +53,14 @@ functions:
       params:
         shell: bash
         working_dir: ${working_dir}
+        add_to_path:
+          - ${cargo_bin}
         script: |
           echo "Hello, this is the first command."
           echo "I see the expansion 'skip_machete_build' has value ${skip_machete_build}."
           echo "And I see the expansion 'test_var' has value ${test_var}."
           echo "Also, globally, I see the expansions 'cargo_bin' (${cargo_bin}) and 'PRODUCT_NAME' (${PRODUCT_NAME})."
+          cargo version
           echo "Good luck on the next command."
     - command: subprocess.exec
       type: test
