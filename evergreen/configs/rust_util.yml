@@ -61,6 +61,7 @@ functions:
     - command: subprocess.exec
       params:
         <<: *rust_subprocess_default_params
+        add_expansions_to_env: true
         args:
           - ${script_dir}/install_rust_toolchain.sh
 

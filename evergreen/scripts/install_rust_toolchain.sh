@@ -2,6 +2,8 @@
 
 set -o errexit
 
+echo "env $(env)"
+
 # make sure to use msvc toolchain rather than gnu, which is
 # the default for cygwin
 if [ "Windows_NT" == "$OS" ]; then
