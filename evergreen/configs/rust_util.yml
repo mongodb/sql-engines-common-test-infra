@@ -48,6 +48,16 @@ functions:
   # Arguments:
   #   - skip_machete_build - indicate whether to skip building before running `cargo machete`
   "check unused dependencies":
+    - command: subprocess.exec
+      type: test
+      params:
+        <<: *rust_subprocess_default_params
+        include_expansions_in_env:
+          - skip_machete_build
+        args:
+          - ${script_dir}/check_unused_dependencies.sh
+
+  "alt check unused deps":
     - command: shell.exec
       type: test
       params:
@@ -65,24 +75,34 @@ functions:
     - command: expansions.update
       params:
         updates:
-        - key: skip_machete_build
-          value: "true"
-        - key: extra_expansion
-          value: "haha"
-    - command: subprocess.exec
+          - key: skip_machete_build
+            value: "true"
+          - key: extra_expansion
+            value: "haha"
+    - command: shell.exec
       type: test
       params:
-        <<: *rust_subprocess_default_params
-        add_expansions_to_env: true
-        args:
-          - ${script_dir}/check_unused_dependencies.sh
+        shell: bash
+        working_dir: ${working_dir}
+        add_to_path:
+          - ${cargo_bin}
+        script: |
+          echo "I see expansion value 'skip_machete_build' is ${skip_machete_build}"
+          cargo install cargo-machete
+          set +e
+          cargo machete
+          RETURN=$?
+          set -e
+          if [ $RETURN -ne 0 ]; then
+            >&2 echo "Unused dependencies found"
+            >&2 cargo machete
+          fi
 
   # Installs Rust in a platform-independent manner
   "install rust toolchain":
     - command: subprocess.exec
       params:
         <<: *rust_subprocess_default_params
-        add_expansions_to_env: true
         args:
           - ${script_dir}/install_rust_toolchain.sh
 
