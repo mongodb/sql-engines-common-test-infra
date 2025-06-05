@@ -54,6 +54,7 @@ functions:
         <<: *rust_subprocess_default_params
         include_expansions_in_env:
           - skip_machete_build
+          - test_var
         args:
           - ${script_dir}/check_unused_dependencies.sh
 

@@ -2,7 +2,8 @@
 
 set -o errexit
 
-echo "In check_unused_dependencies.sh script with value:"
+echo "In check_unused_dependencies.sh script with values:"
+echo "env $(env)"
 echo "skip_machete_build = $skip_machete_build"
 
 cargo install cargo-machete
