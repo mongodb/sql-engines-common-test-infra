@@ -58,10 +58,17 @@ functions:
         script: |
           echo "Hello, this is the first command."
           echo "I see the expansion 'skip_machete_build' has value ${skip_machete_build}."
-          echo "And I see the expansion 'test_var' has value ${test_var}."
+          echo "And I see the expansions 'test_var' has value ${test_var} and 'arg_3' has the value ${arg_3}."
           echo "Also, globally, I see the expansions 'cargo_bin' (${cargo_bin}) and 'PRODUCT_NAME' (${PRODUCT_NAME})."
           cargo version
           echo "Good luck on the next command."
+          cat <<EOT >> expansions.yml
+          skip_machete_build: true
+          EOT
+          cat expansions.yml
+    - command: expansions.update
+      params:
+        file: ${working_dir}/expansions.yml
     - command: subprocess.exec
       type: test
       params:
