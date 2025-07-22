@@ -252,6 +252,38 @@ if [ $ARG = $START ]; then
     STORES='{ "name" : "localmongo", "provider" : "mongodb", "uri" : "mongodb://localhost:%s" }'
     STORES=$(printf "$STORES" "${MONGOD_PORT}")
     DATABASES=$(cat $DB_CONFIG_PATH)
+    # add a user that only has read role for db2, it will have the same password 'pencil' as mhuser
+    DBREADERUSER=$(cat <<EOV
+{
+  "name": "db2reader",
+  "db": "admin",
+  "credentials": {
+    "scramSHA1": {
+      "iterations": 10000,
+      "salt": "CVmjg1IDp3KfHfiXNZhmbQ==",
+      "storedKey": "9cIonYrtLI/+OmZ96wiQkduwXeI=",
+      "serverKey": "kCfqkc7sgQaihzXHqbxZxz3O3H4="
+    },
+    "scramSHA256": {
+      "iterations": 15000,
+      "salt": "6i+wBCHE21EaI8IF9+tvPkCoYWY+IyedLaVXGQ==",
+      "storedKey": "hnn0iJZ6ZNO9X34oyxtZUKLAMScwpCdch3vGPuDXOvM=",
+      "serverKey": "3Qg6ptTiTvPwhGSZi0NpAkmsW8P5C/J46Is1t7xaIho="
+    }
+  },
+  "roles": [
+    {
+      "role": "read",
+      "db": "db2"
+    }
+  ],
+  "x509Type": "NONE",
+  "oidcAuthType": "NONE",
+  "awsIAMType": "NONE",
+  "createdDate": "0001-01-01T00:00:00Z"
+}
+EOV
+)
 
     # Replace the existing storage config with a wildcard collection for the local mongodb
     cp ${TENANT_CONFIG} ${TENANT_CONFIG}.orig
@@ -259,6 +291,8 @@ if [ $ARG = $START ]; then
     $JQ --argjson obj "$STORES" '.storage.stores += [$obj]' ${TENANT_CONFIG} > ${TENANT_CONFIG}.tmp\
                                                                && mv ${TENANT_CONFIG}.tmp ${TENANT_CONFIG}
     $JQ --argjson obj "$DATABASES" '.storage.databases += $obj' ${TENANT_CONFIG} > ${TENANT_CONFIG}.tmp\
+                                                               && mv ${TENANT_CONFIG}.tmp ${TENANT_CONFIG}
+    $JQ --argjson obj "$DBREADERUSER" '.security.users += [$obj]' ${TENANT_CONFIG} > ${TENANT_CONFIG}.tmp\
                                                                && mv ${TENANT_CONFIG}.tmp ${TENANT_CONFIG}
 
     $GO run cmd/buildscript/build.go init:mongodb-tenant
