@@ -253,12 +253,8 @@ if [ $ARG = $START ]; then
     STORES='{ "name" : "localmongo", "provider" : "mongodb", "uri" : "mongodb://localhost:%s" }'
     STORES=$(printf "$STORES" "${MONGOD_PORT}")
     DATABASES=$(cat $DB_CONFIG_PATH)
-    # add a user that only has read role for db2, it will have the same password 'pencil' as mhuser
+    # Load any additional users 
     USERS=$(cat $USERS_CONFIG_PATH)
-
-    echo "!!!!!!!!"
-    echo "$USERS"
-    echo "!!!!!!!!"
 
     # Replace the existing storage config with a wildcard collection for the local mongodb
     cp ${TENANT_CONFIG} ${TENANT_CONFIG}.orig
