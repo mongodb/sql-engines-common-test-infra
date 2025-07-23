@@ -71,6 +71,7 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 LOCAL_INSTALL_DIR=$SCRIPT_DIR/local_adf
 LOGS_PATH=$LOCAL_INSTALL_DIR/logs
 DB_CONFIG_PATH=$SCRIPT_DIR/configuration/adf_db_config.json
+USERS_CONFIG_PATH=$SCRIPT_DIR/configuration/adf_users_config.json
 # This config enables match filters after currentOp
 ADF_CONFIG_PATH=$SCRIPT_DIR/configuration/adf_config.yaml
 MONGOD_PORT=28017
@@ -252,6 +253,8 @@ if [ $ARG = $START ]; then
     STORES='{ "name" : "localmongo", "provider" : "mongodb", "uri" : "mongodb://localhost:%s" }'
     STORES=$(printf "$STORES" "${MONGOD_PORT}")
     DATABASES=$(cat $DB_CONFIG_PATH)
+    # Load any additional users 
+    USERS=$(cat $USERS_CONFIG_PATH)
 
     # Replace the existing storage config with a wildcard collection for the local mongodb
     cp ${TENANT_CONFIG} ${TENANT_CONFIG}.orig
@@ -259,6 +262,8 @@ if [ $ARG = $START ]; then
     $JQ --argjson obj "$STORES" '.storage.stores += [$obj]' ${TENANT_CONFIG} > ${TENANT_CONFIG}.tmp\
                                                                && mv ${TENANT_CONFIG}.tmp ${TENANT_CONFIG}
     $JQ --argjson obj "$DATABASES" '.storage.databases += $obj' ${TENANT_CONFIG} > ${TENANT_CONFIG}.tmp\
+                                                               && mv ${TENANT_CONFIG}.tmp ${TENANT_CONFIG}
+    $JQ --argjson obj "$USERS" '.security.users += $obj' ${TENANT_CONFIG} > ${TENANT_CONFIG}.tmp\
                                                                && mv ${TENANT_CONFIG}.tmp ${TENANT_CONFIG}
 
     $GO run cmd/buildscript/build.go init:mongodb-tenant

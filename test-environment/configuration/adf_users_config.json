@@ -1,0 +1,28 @@
+[{
+  "name": "db2reader",
+  "db": "admin",
+  "credentials": {
+    "scramSHA1": {
+      "iterations": 10000,
+      "salt": "CVmjg1IDp3KfHfiXNZhmbQ==",
+      "storedKey": "9cIonYrtLI/+OmZ96wiQkduwXeI=",
+      "serverKey": "kCfqkc7sgQaihzXHqbxZxz3O3H4="
+    },
+    "scramSHA256": {
+      "iterations": 15000,
+      "salt": "6i+wBCHE21EaI8IF9+tvPkCoYWY+IyedLaVXGQ==",
+      "storedKey": "hnn0iJZ6ZNO9X34oyxtZUKLAMScwpCdch3vGPuDXOvM=",
+      "serverKey": "3Qg6ptTiTvPwhGSZi0NpAkmsW8P5C/J46Is1t7xaIho="
+    }
+  },
+  "roles": [
+    {
+      "role": "read",
+      "db": "db2"
+    }
+  ],
+  "x509Type": "NONE",
+  "oidcAuthType": "NONE",
+  "awsIAMType": "NONE",
+  "createdDate": "0001-01-01T00:00:00Z"
+}]

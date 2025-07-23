@@ -166,6 +166,7 @@ async fn main() -> Result<()> {
                 .expect("no mongod_uri provided and MDB_TEST_LOCAL_PORT is not set"),
         )
     });
+    println!("\tUsing mongod URI: {mdb_uri}");
     let mdb_client = Client::with_uri_str(mdb_uri).await?;
 
     println!("Step 2: Reading data files.");
