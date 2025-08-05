@@ -2,9 +2,16 @@
 # SQL Engines Evergreen projects. The functions in this config file depend on one or more of the
 # following expansions:
 #  - working_dir - the working directory in which a function should run
+#  - release_version - the version (snapshot or release version) of the product being built
 #  - author - the author of the changes (set by Evergreen)
 #  - author_email - the email of the author of the changes (set by Evergreen)
 #  - COMPLIANCE_REPORT_NAME - the name of the compliance report being generated
+#  - STATIC_CODE_ANALYSIS_NAME - the name of the file to output semgrep static analysis
+
+variables:
+  - &rust_subprocess_default_params
+      working_dir: ${working_dir}
+      binary: bash
 
 functions:
   "generate compliance report":
@@ -15,15 +22,14 @@ functions:
         working_dir: ${working_dir}
         include_expansions_in_env:
           - release_version
-          - template_filename
-          - project_folder
+          - template_filepath
         script: |
           echo "Author = ${author}"
           echo "Author email = ${author_email}"
           echo "Version = ${release_version}"
 
-          SBOM_URL="https://translators-connectors-releases.s3.amazonaws.com/eap/${project_folder}/${project_folder}-v${release_version}.sbom.json"
-          SARIF_URL="https://translators-connectors-releases.s3.amazonaws.com/eap/${project_folder}/${project_folder}-v${release_version}.sast.sarif"
+          SBOM_URL="https://translators-connectors-releases.s3.amazonaws.com/eap/${working_dir}/${working_dir}-${release_version}.sbom.json"
+          SARIF_URL="https://translators-connectors-releases.s3.amazonaws.com/eap/${working_dir}/${working_dir}-${release_version}.sast.sarif"
 
           echo "Sbom url = $SBOM_URL"
           echo "Sarif Url = $SARIF_URL"
@@ -31,7 +37,8 @@ functions:
           echo "----- Generating ${COMPLIANCE_REPORT_NAME} -----"
 
           # Copy template
-          cp resources/release/${template_filename} ${COMPLIANCE_REPORT_NAME}
+          echo "Copying template file from ${template_filepath} to ${COMPLIANCE_REPORT_NAME}"
+          cp ${template_filepath} ${COMPLIANCE_REPORT_NAME}
 
           # Update the version
           echo "Update the version"
@@ -59,6 +66,7 @@ functions:
           echo "---------------------------"
     - command: s3.put
       params:
+        # TODO: we should use aws assume role instead once all the projects are set up this way.
         aws_key: ${aws_key}
         aws_secret: ${aws_secret}
         local_file: ${working_dir}/${COMPLIANCE_REPORT_NAME}
@@ -67,129 +75,96 @@ functions:
         bucket: mciuploads
         permissions: public-read
 
-  # "generate SBOM": TODO: odbc generation isn't standard because it includes the winsetupgui
+  # "generate SBOM": TODO: generic sbom func.
     
-  # "scan SBOM":
-  #   - command: shell.exec
-  #     type: test
-  #     params:
-  #       shell: bash
-  #       working_dir: ${working_dir}
-  #       script: |
-  #         ${prepare_shell}
+  "scan SBOM":
+    - command: shell.exec
+      type: test
+      params:
+        shell: bash
+        working_dir: ${working_dir}
+        script: |
+          ${prepare_shell}
 
-  #         echo ">>>> Scan SBOM for vulnerabilities..."
-  #         if [[ "$ALLOW_VULNS" != "" ]]; then
-  #           echo "Vulnerability ids to ignore : $ALLOW_VULNS"
+          echo ">>>> Scan SBOM for vulnerabilities..."
+          if [[ "$ALLOW_VULNS" != "" ]]; then
+            echo "Vulnerability ids to ignore : $ALLOW_VULNS"
 
-  #           echo "-- Generate .grype.yaml specifying vulnerabilities to ignore --"
-  #           GRYPE_CONF_FILE=".grype.yaml"
-  #           touch $GRYPE_CONF_FILE
-  #           echo "ignore:" > $GRYPE_CONF_FILE
+            echo "-- Generate .grype.yaml specifying vulnerabilities to ignore --"
+            GRYPE_CONF_FILE=".grype.yaml"
+            touch $GRYPE_CONF_FILE
+            echo "ignore:" > $GRYPE_CONF_FILE
 
-  #           IFS=','; for VULN_ID in $ALLOW_VULNS; do
-  #             echo "Ignoring vulnerability with id $VULN_ID"
-  #             echo "    - vulnerability: $VULN_ID" >> $GRYPE_CONF_FILE
-  #           done
-  #           echo "------------------------------------"
-  #         fi
+            IFS=','; for VULN_ID in $ALLOW_VULNS; do
+              echo "Ignoring vulnerability with id $VULN_ID"
+              echo "    - vulnerability: $VULN_ID" >> $GRYPE_CONF_FILE
+            done
+            echo "------------------------------------"
+          fi
 
-  #         echo "-- Scanning dependency for vulnerabilities --"
-  #         ./$SBOM_DIR/grype sbom:$SBOM_LICENSES --fail-on low
-  #         echo "---------------------------------------------"
-  #         echo "<<<< Done scanning SBOM"
-  # "trace artifacts":
-  #   - command: shell.exec
-  #     params:
-  #       shell: bash
-  #       working_dir: ${working_dir}
-  #       script: |
-  #         mkdir papertrail
-  #   - command: s3.get
-  #     params:
-  #       aws_key: ${release_aws_key}
-  #       aws_secret: ${release_aws_secret}
-  #       local_file: ${working_dir}/papertrail/${MSI_FILENAME}
-  #       remote_file: ${WINDOWS_INSTALLER_PATH}
-  #       bucket: translators-connectors-releases
-  #       permissions: public-read
-  #       content_type: application/octet-stream
-  #   - command: s3.get
-  #     params:
-  #       aws_key: ${release_aws_key}
-  #       aws_secret: ${release_aws_secret}
-  #       local_file: ${working_dir}/papertrail/${UBUNTU_FILENAME}
-  #       remote_file: ${UBUNTU2204_INSTALLER_PATH}
-  #       bucket: translators-connectors-releases
-  #       permissions: public-read
-  #       content_type: application/octet-stream
-  #   - command: papertrail.trace
-  #     params:
-  #       work_dir: ${working_dir}
-  #       key_id: ${papertrail_id}
-  #       secret_key: ${papertrail_key}
-  #       product: mongo-odbc-driver
-  #       version: ${release_version}
-  #       filenames:
-  #         - papertrail/*
-  # "generate static code analysis":
-  #   - command: shell.exec
-  #     type: test
-  #     params:
-  #       shell: bash
-  #       working_dir: ${working_dir}
-  #       script: |
-  #         ${prepare_shell}
-  #         export SEMGREP_APP_TOKEN=${semgrep_app_token}
-  #         echo "Running static code analysis with Semgrep..."
+          echo "-- Scanning dependency for vulnerabilities --"
+          ./$SBOM_DIR/grype sbom:$SBOM_LICENSES --fail-on low
+          echo "---------------------------------------------"
+          echo "<<<< Done scanning SBOM"
 
-  #         # Setup or use the existing virtualenv for semgrep
-  #         if [[ -f "venv/bin/activate" ]]; then
-  #             echo 'using existing virtualenv'
-  #             . venv/bin/activate
-  #         else
-  #             echo 'Creating new virtualenv'
-  #             python3 -m virtualenv venv
-  #             echo 'Activating new virtualenv'
-  #             . venv/bin/activate
-  #         fi
-  #         python3 -m pip install semgrep
-  #         # Confirm semgrep version
-  #         semgrep --version
-  #         set +e
-  #         semgrep --config p/rust --sarif --exclude "integration_test" --verbose --error --severity=ERROR --sarif-output=mongo-odbc-driver.sast.sarif > mongo-odbc-driver.sast.cmd.verbose.out 2>&1
-  #         SCAN_RESULT=$?
-  #         set -e
-  #         # Exit with a failure if the scan found an issue
-  #         exit $SCAN_RESULT
-  #   - command: s3.put
-  #     params:
-  #       aws_key: ${aws_key}
-  #       aws_secret: ${aws_secret}
-  #       local_files_include_filter:
-  #         - mongo-odbc-driver.sast.*
-  #       remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/
-  #       content_type: text/plain
-  #       bucket: mciuploads
-  #       permissions: public-read
+  "generate static code analysis":
+    - command: shell.exec
+      type: test
+      params:
+        shell: bash
+        working_dir: ${working_dir}
+        script: |
+          ${prepare_shell}
+          export SEMGREP_APP_TOKEN=${semgrep_app_token}
+          echo "Running static code analysis with Semgrep..."
 
-  # "publish static code analysis":
-  #   - command: s3.get
-  #     params:
-  #       aws_key: ${aws_key}
-  #       aws_secret: ${aws_secret}
-  #       local_file: ${working_dir}/papertrail/${STATIC_CODE_ANALYSIS_NAME}
-  #       remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${STATIC_CODE_ANALYSIS_NAME}
-  #       content_type: application/json
-  #       bucket: mciuploads
-  #   - command: s3.put
-  #     params:
-  #       aws_key: ${release_aws_key}
-  #       aws_secret: ${release_aws_secret}
-  #       local_file: ${working_dir}/papertrail/${STATIC_CODE_ANALYSIS_NAME}
-  #       remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${STATIC_CODE_ANALYSIS_NAME}
-  #       content_type: application/json
-  #       bucket: translators-connectors-releases
-  #       permissions: public-read
-  #       display_name: mongo-odbc-${release_version}.sast.sarif
+          # Setup or use the existing virtualenv for semgrep
+          if [[ -f "venv/bin/activate" ]]; then
+              echo 'using existing virtualenv'
+              . venv/bin/activate
+          else
+              echo 'Creating new virtualenv'
+              python3 -m virtualenv venv
+              echo 'Activating new virtualenv'
+              . venv/bin/activate
+          fi
+          python3 -m pip install semgrep
+          # Confirm semgrep version
+          semgrep --version
+          set +e
+          semgrep --config p/rust --sarif --exclude "integration_test" --verbose --error --severity=ERROR --sarif-output=${STATIC_CODE_ANALYSIS_NAME} > ${STATIC_CODE_ANALYSIS_NAME}.cmd.verbose.out 2>&1
+          SCAN_RESULT=$?
+          set -e
+          # Exit with a failure if the scan found an issue
+          exit $SCAN_RESULT
+    - command: s3.put
+      params:
+        # TODO: we should use aws assume role instead once all the projects are set up this way.
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        local_files_include_filter:
+          - ${STATIC_CODE_ANALYSIS_NAME}*
+        remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/
+        content_type: text/plain
+        bucket: mciuploads
+        permissions: public-read
 
+  "publish static code analysis":
+    - command: s3.get
+      params:
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        local_file: ${working_dir}/papertrail/${STATIC_CODE_ANALYSIS_NAME}
+        remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${STATIC_CODE_ANALYSIS_NAME}
+        content_type: application/json
+        bucket: mciuploads
+    - command: s3.put
+      params:
+        aws_key: ${release_aws_key}
+        aws_secret: ${release_aws_secret}
+        local_file: ${working_dir}/papertrail/${STATIC_CODE_ANALYSIS_NAME}
+        remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${STATIC_CODE_ANALYSIS_NAME}
+        content_type: application/json
+        bucket: translators-connectors-releases
+        permissions: public-read
+        display_name: ${working_dir}-${release_version}.sast.sarif
