@@ -66,7 +66,7 @@ functions:
           echo "---------------------------"
     - command: s3.put
       params:
-        # TODO: we should use aws assume role instead once all the projects are set up this way.
+        # SQL-2918: we should use aws assume role instead once all the projects are set up this way.
         aws_key: ${aws_key}
         aws_secret: ${aws_secret}
         local_file: ${working_dir}/${COMPLIANCE_REPORT_NAME}
@@ -74,8 +74,6 @@ functions:
         content_type: text/markdown
         bucket: mciuploads
         permissions: public-read
-
-  # "generate SBOM": TODO: generic sbom func.
     
   "scan SBOM":
     - command: shell.exec
@@ -139,7 +137,7 @@ functions:
           exit $SCAN_RESULT
     - command: s3.put
       params:
-        # TODO: we should use aws assume role instead once all the projects are set up this way.
+        # SQL-2918: we should use aws assume role instead once all the projects are set up this way.
         aws_key: ${aws_key}
         aws_secret: ${aws_secret}
         local_files_include_filter:
