@@ -20,8 +20,12 @@ functions:
       params:
         <<: *rust_subprocess_default_params
         include_expansions_in_env:
+          - author
+          - author_email
           - release_version
           - template_filepath
+          - working_dir
+          - COMPLIANCE_REPORT_NAME
         args:
           - ${script_dir}/generate_compliance_report.sh
     - command: s3.put
@@ -36,12 +40,12 @@ functions:
         permissions: public-read
     
   "scan SBOM":
-    # - command: shell.exec
     - command: subprocess.exec
       type: test
       params:
         <<: *rust_subprocess_default_params
         include_expansions_in_env:
+          - working_dir
           - ALLOW_VULNS
           - SBOM_DIR
           - SBOM_LICENSES
@@ -49,12 +53,13 @@ functions:
           - ${script_dir}/scan_sbom.sh
 
   "generate static code analysis":
-    # - command: shell.exec
     - command: subprocess.exec
       type: test
       params:
         <<: *rust_subprocess_default_params
         include_expansions_in_env:
+          - semgrep_app_token
+          - working_dir
           - STATIC_CODE_ANALYSIS_NAME
         args:
           - ${script_dir}/generate_static_code_analysis.sh
