@@ -19,6 +19,8 @@ echo "------------------------------------"
 fi
 
 echo "-- Scanning dependency for vulnerabilities --"
+echo "SBOM_DIR = $SBOM_DIR"
+echo "./$SBOM_DIR/grype sbom:$SBOM_DIR --fail-on low"
 ./$SBOM_DIR/grype sbom:$SBOM_LICENSES --fail-on low
 echo "---------------------------------------------"
 echo "<<<< Done scanning SBOM"
