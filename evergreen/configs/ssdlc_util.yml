@@ -44,6 +44,7 @@ functions:
         include_expansions_in_env:
           - ALLOW_VULNS
           - SBOM_DIR
+          - SBOM_LICENSES
         args:
           - ${script_dir}/scan_sbom.sh
 

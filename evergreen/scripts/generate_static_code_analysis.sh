@@ -3,6 +3,7 @@
 set -o errexit
 
 export SEMGREP_APP_TOKEN=${semgrep_app_token}
+echo "SEMGREP_APP_TOKEN = ${SEMGREP_APP_TOKEN}"
 echo "Running static code analysis with Semgrep..."
 
 # Setup or use the existing virtualenv for semgrep

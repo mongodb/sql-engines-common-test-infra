@@ -11,6 +11,7 @@ GRYPE_CONF_FILE=".grype.yaml"
 touch $GRYPE_CONF_FILE
 echo "ignore:" > $GRYPE_CONF_FILE
 
+echo "ALLOW_VULNS = $ALLOW_VULNS"
 IFS=','; for VULN_ID in $ALLOW_VULNS; do
     echo "Ignoring vulnerability with id $VULN_ID"
     echo "    - vulnerability: $VULN_ID" >> $GRYPE_CONF_FILE
@@ -19,8 +20,7 @@ echo "------------------------------------"
 fi
 
 echo "-- Scanning dependency for vulnerabilities --"
-echo "SBOM_DIR = $SBOM_DIR"
-echo "./$SBOM_DIR/grype sbom:$SBOM_DIR --fail-on low"
+echo "$SBOM_LICENSES"
 ./$SBOM_DIR/grype sbom:$SBOM_LICENSES --fail-on low
 echo "---------------------------------------------"
 echo "<<<< Done scanning SBOM"
