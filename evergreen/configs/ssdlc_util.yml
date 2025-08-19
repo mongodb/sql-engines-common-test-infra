@@ -1,0 +1,99 @@
+# This file contains common SSDLC-related functions and tasks that are useful across multiple
+# SQL Engines Evergreen projects. The functions in this config file depend on one or more of the
+# following expansions:
+#  - working_dir - the working directory in which a function should run
+#  - release_version - the version (snapshot or release version) of the product being built
+#  - author - the author of the changes (set by Evergreen)
+#  - author_email - the email of the author of the changes (set by Evergreen)
+#. - ALLOW_VULNS - known vulnerabilities to ignore during scanning
+#  - COMPLIANCE_REPORT_NAME - the name of the compliance report being generated
+#  - SBOM_DIR - the directory to output sbom files to
+#  - SBOM_LICENSES - the name of the intermediate license file to scan
+#  - STATIC_CODE_ANALYSIS_NAME - the name of the file to output semgrep static analysis
+
+variables:
+  - &rust_subprocess_default_params
+      working_dir: ${working_dir}
+      binary: bash
+
+functions:
+  "generate compliance report":
+    - command: subprocess.exec
+      type: test
+      params:
+        <<: *rust_subprocess_default_params
+        include_expansions_in_env:
+          - author
+          - author_email
+          - release_version
+          - template_filepath
+          - working_dir
+          - COMPLIANCE_REPORT_NAME
+        args:
+          - ${script_dir}/generate_compliance_report.sh
+    - command: s3.put
+      params:
+        # SQL-2918: we should use aws assume role instead once all the projects are set up this way.
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        local_file: ${working_dir}/${COMPLIANCE_REPORT_NAME}
+        remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${COMPLIANCE_REPORT_NAME}
+        content_type: text/markdown
+        bucket: mciuploads
+        permissions: public-read
+    
+  "scan SBOM":
+    - command: subprocess.exec
+      type: test
+      params:
+        <<: *rust_subprocess_default_params
+        include_expansions_in_env:
+          - working_dir
+          - ALLOW_VULNS
+          - SBOM_DIR
+          - SBOM_LICENSES
+        args:
+          - ${script_dir}/scan_sbom.sh
+
+  "generate static code analysis":
+    - command: subprocess.exec
+      type: test
+      params:
+        <<: *rust_subprocess_default_params
+        include_expansions_in_env:
+          - semgrep_app_token
+          - working_dir
+          - STATIC_CODE_ANALYSIS_NAME
+        args:
+          - ${script_dir}/generate_static_code_analysis.sh
+    - command: s3.put
+      params:
+        # SQL-2918: we should use aws assume role instead once all the projects are set up this way.
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        local_files_include_filter:
+          - ${STATIC_CODE_ANALYSIS_NAME}*
+        remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/
+        content_type: application/json
+        bucket: mciuploads
+        permissions: public-read
+
+  "publish static code analysis":
+    - command: s3.get
+      params:
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        local_file: ${working_dir}/papertrail/${STATIC_CODE_ANALYSIS_NAME}
+        remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${STATIC_CODE_ANALYSIS_NAME}
+        content_type: application/json
+        bucket: mciuploads
+    - command: s3.put
+      params:
+        aws_key: ${release_aws_key}
+        aws_secret: ${release_aws_secret}
+        local_file: ${working_dir}/papertrail/${STATIC_CODE_ANALYSIS_NAME}
+        remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${STATIC_CODE_ANALYSIS_NAME}
+        content_type: application/json
+        bucket: translators-connectors-releases
+        permissions: public-read
+        display_name: ${working_dir}-${release_version}.sast.sarif
