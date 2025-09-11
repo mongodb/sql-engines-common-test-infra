@@ -29,6 +29,8 @@ functions:
           - template_filepath
           - working_dir
           - COMPLIANCE_REPORT_NAME
+          - STATIC_CODE_ANALYSIS_NAME
+          - SBOM_FILENAME
         args:
           - ${script_dir}/generate_compliance_report.sh
     - command: s3.put
@@ -37,7 +39,7 @@ functions:
         aws_key: ${aws_key}
         aws_secret: ${aws_secret}
         local_file: ${working_dir}/${COMPLIANCE_REPORT_NAME}
-        remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${COMPLIANCE_REPORT_NAME}
+        remote_file: ${working_dir}/artifacts/${working_dir}_${version_id}/ssdlc/${COMPLIANCE_REPORT_NAME}
         content_type: text/markdown
         bucket: mciuploads
         permissions: public-read
@@ -92,8 +94,8 @@ functions:
         aws_key: ${release_aws_key}
         aws_secret: ${release_aws_secret}
         local_file: ${working_dir}/papertrail/${STATIC_CODE_ANALYSIS_NAME}
-        remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${STATIC_CODE_ANALYSIS_NAME}
+        remote_file: ${working_dir}/${STATIC_CODE_ANALYSIS_NAME}
         content_type: application/json
         bucket: translators-connectors-releases
         permissions: public-read
-        display_name: ${working_dir}-${release_version}.sast.sarif
+        display_name: ${STATIC_CODE_ANALYSIS_NAME}
