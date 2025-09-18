@@ -44,7 +44,27 @@ functions:
         content_type: text/markdown
         bucket: mciuploads
         permissions: public-read
-    
+
+  "publish compliance report":
+    - command: s3.get
+      params:
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        local_file: ${working_dir}/${COMPLIANCE_REPORT_NAME}
+        remote_file: ${working_dir}/artifacts/${working_dir}_${version_id}/ssdlc/${COMPLIANCE_REPORT_NAME}
+        content_type: text/markdown
+        bucket: mciuploads
+    - command: s3.put
+      params:
+        aws_key: ${release_aws_key}
+        aws_secret: ${release_aws_secret}
+        local_file: ${working_dir}/${COMPLIANCE_REPORT_NAME}
+        remote_file: ${working_dir}/${COMPLIANCE_REPORT_NAME}
+        content_type: text/markdown
+        bucket: translators-connectors-releases
+        permissions: public-read
+        display_name: ${COMPLIANCE_REPORT_NAME}
+
   "scan SBOM":
     - command: subprocess.exec
       type: test
@@ -57,6 +77,27 @@ functions:
           - SBOM_LICENSES
         args:
           - ${script_dir}/scan_sbom.sh
+
+  "publish augmented SBOM":
+    - command: s3.get
+      params:
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        local_file: ${working_dir}/${AUGMENTED_SBOM_FILENAME}
+        remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${AUGMENTED_SBOM_FILENAME}
+        content_type: application/json
+        bucket: mciuploads
+        permissions: public-read
+    - command: s3.put
+      params:
+        aws_key: ${release_aws_key}
+        aws_secret: ${release_aws_secret}
+        local_file: ${working_dir}/${AUGMENTED_SBOM_FILENAME}
+        remote_file: ${working_dir}/${SBOM_FILENAME}
+        bucket: translators-connectors-releases
+        content_type: application/json
+        permissions: public-read
+        display_name: ${SBOM_FILENAME}
 
   "generate static code analysis":
     - command: subprocess.exec
