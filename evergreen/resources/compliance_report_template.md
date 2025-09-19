@@ -3,6 +3,9 @@
 **Release Creator**  
 %AUTHOR% - %AUTHOR_EMAIL%
 
+**Compliance Report Created Date**  
+%CREATED_DATE%
+
 **Process Document**  
 https://www.mongodb.com/resources/products/capabilities/supply-chain-security-in-mongodb-s-software-development-lifecycle
 
@@ -16,7 +19,7 @@ See SBOM at URL: %SBOM_URL%
 See report at URL: %SARIF_URL%
 
 **Signature Information**  
-Product is signed with signatures available which can be verified by following the instructions from our [README](https://github.com/mongodb/%REPO_NAME%#).
+Product is signed with signatures available which can be verified by following the instructions from our [README](https://github.com/mongodb/%REPO_NAME%/blob/main/README.md#%SIGNING_TITLE%).
 
 **Known Vulnerabilities**  
 Any vulnerabilities that may be shown in the links referenced above have been reviewed and accepted by the appropriate reviewers.

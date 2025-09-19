@@ -15,8 +15,8 @@ echo "Sarif Url = $SARIF_URL"
 echo "----- Generating ${COMPLIANCE_REPORT_NAME} -----"
 
 # Copy template
-echo "Copying template file from ${template_filepath} to ${COMPLIANCE_REPORT_NAME}"
-cp ${template_filepath} ${COMPLIANCE_REPORT_NAME}
+echo "Copying template file from sql-engines-common-test-infra/evergreen/resources/compliance_report_template.md to ${COMPLIANCE_REPORT_NAME}"
+cp sql-engines-common-test-infra/evergreen/resources/compliance_report_template.md ${COMPLIANCE_REPORT_NAME}
 
 # Update the version
 echo "Update the version"
@@ -41,4 +41,28 @@ sed -i.bu "s,%AUTHOR%,${author},g" ${COMPLIANCE_REPORT_NAME}
 echo "update the author email"
 echo "sed -i.bu "s,%AUTHOR_EMAIL%,${author_email},g" ${COMPLIANCE_REPORT_NAME}"
 sed -i.bu "s,%AUTHOR_EMAIL%,${author_email},g" ${COMPLIANCE_REPORT_NAME}
+echo "---------------------------"
+
+# Update the created date
+CREATED_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "Created date = $CREATED_DATE"
+echo "update the created date"
+echo "sed -i.bu "s,%CREATED_DATE%,${CREATED_DATE},g" ${COMPLIANCE_REPORT_NAME}"
+sed -i.bu "s,%CREATED_DATE%,${CREATED_DATE},g" ${COMPLIANCE_REPORT_NAME}
+echo "---------------------------"
+
+# update repository specific metadata
+echo "update the repo title"
+echo "sed -i.bu "s,%REPO_TITLE%,${repo_title},g" ${COMPLIANCE_REPORT_NAME}"
+sed -i.bu "s,%REPO_TITLE%,${repo_title},g" ${COMPLIANCE_REPORT_NAME}
+echo "---------------------------"
+
+echo "update the repo name"
+echo "sed -i.bu "s,%REPO_NAME%,${repo_name},g" ${COMPLIANCE_REPORT_NAME}"
+sed -i.bu "s,%REPO_NAME%,${repo_name},g" ${COMPLIANCE_REPORT_NAME}
+echo "---------------------------"
+
+echo "update the link to signing verification instructions"
+echo "sed -i.bu "s,%SIGNING_TITLE%,${signing_title},g" ${COMPLIANCE_REPORT_NAME}"
+sed -i.bu "s,%SIGNING_TITLE%,${signing_title},g" ${COMPLIANCE_REPORT_NAME}
 echo "---------------------------"

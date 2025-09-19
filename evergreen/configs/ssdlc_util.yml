@@ -27,7 +27,9 @@ functions:
           - author
           - author_email
           - release_version
-          - template_filepath
+          - repo_name
+          - repo_title
+          - signing_title
           - working_dir
           - COMPLIANCE_REPORT_NAME
           - STATIC_CODE_ANALYSIS_NAME
