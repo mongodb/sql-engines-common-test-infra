@@ -15,9 +15,21 @@
 variables:
   - &rust_subprocess_default_params
       working_dir: ${working_dir}
+      PRODUCT_NAME: ${PRODUCT_NAME}
       binary: bash
 
 functions:
+  "create ssdlc expansions":
+    - command: subprocess.exec
+      params:
+        add_expansions_to_env: true
+        binary: bash
+        args:
+          - ${script_dir}/create-ssdlc-expansions.sh
+    - command: expansions.update
+      params:
+        file: ${working_dir}/ssdlc-expansions.yml
+
   "generate compliance report":
     - command: subprocess.exec
       type: test
@@ -28,12 +40,13 @@ functions:
           - author_email
           - release_version
           - repo_name
-          - repo_title
-          - signing_title
+          - product_name
+          - signing_section_bookmark
           - working_dir
+          - resources_dir
           - COMPLIANCE_REPORT_NAME
-          - STATIC_CODE_ANALYSIS_NAME
           - SBOM_FILENAME
+          - STATIC_CODE_ANALYSIS_NAME
         args:
           - ${script_dir}/generate_compliance_report.sh
     - command: s3.put
@@ -42,7 +55,7 @@ functions:
         aws_key: ${aws_key}
         aws_secret: ${aws_secret}
         local_file: ${working_dir}/${COMPLIANCE_REPORT_NAME}
-        remote_file: ${working_dir}/artifacts/${working_dir}_${version_id}/ssdlc/${COMPLIANCE_REPORT_NAME}
+        remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${COMPLIANCE_REPORT_NAME}
         content_type: text/markdown
         bucket: mciuploads
         permissions: public-read
@@ -53,7 +66,7 @@ functions:
         aws_key: ${aws_key}
         aws_secret: ${aws_secret}
         local_file: ${working_dir}/${COMPLIANCE_REPORT_NAME}
-        remote_file: ${working_dir}/artifacts/${working_dir}_${version_id}/ssdlc/${COMPLIANCE_REPORT_NAME}
+        remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${COMPLIANCE_REPORT_NAME}
         content_type: text/markdown
         bucket: mciuploads
     - command: s3.put
