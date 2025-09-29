@@ -92,6 +92,7 @@ functions:
         <<: *rust_subprocess_default_params
         include_expansions_in_env:
           - cargo_test_flags
+          - mongodb_version
           - description
         args:
           - ${script_dir}/run_rust_tests.sh
