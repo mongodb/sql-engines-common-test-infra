@@ -4,6 +4,7 @@ set -o errexit
 
 export SEMGREP_APP_TOKEN=${semgrep_app_token}
 echo "Running static code analysis with Semgrep..."
+echo "Output sarif file name: ${STATIC_CODE_ANALYSIS_NAME}"
 
 # Setup or use the existing virtualenv for semgrep
 if [[ -f "venv/bin/activate" ]]; then
@@ -22,5 +23,9 @@ set +e
 semgrep --config p/rust --sarif --exclude "integration_test" --verbose --error --severity=ERROR --sarif-output=${STATIC_CODE_ANALYSIS_NAME} > ${STATIC_CODE_ANALYSIS_NAME}.cmd.verbose.out 2>&1
 SCAN_RESULT=$?
 set -e
+
+# This adds a timestamp to the SAST file (i.e., this adds `"executionDateTime": <timestamp>` to `runs.invocations`). 
+jq --arg ts "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" '(.runs[] | select(has("invocations"))).invocations[0].executionDateTime = $ts' ${STATIC_CODE_ANALYSIS_NAME} > temp.sarif && mv temp.sarif ${STATIC_CODE_ANALYSIS_NAME}
+
 # Exit with a failure if the scan found an issue
 exit $SCAN_RESULT
