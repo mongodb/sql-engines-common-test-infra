@@ -1,0 +1,34 @@
+# This file contains common benchmark-related functions and tasks that are useful across multiple
+# SQL Engines evergreen projects. The functions in this config file depend on one or more of the
+# following expansions:
+#  - build_variant - the build variant the function or task on which the function or task is run
+#  - script_dir - path to the sql-engines-common-test-infra scripts (varies by repo)
+#  - working_dr - the working directory in which a function should run
+
+functions:
+  # Installs heaptrack and creates the heaptrack_path expansion which points to the installation.
+  # To use heaptrack, downstream functions and tasks must ensure the LD_LIBRARY_PATH is updated to
+  # include ${heaptrack_path}/lib. The binary itself is available in ${heaptrack_path}/bin.
+  "install heaptrack":
+    - command: subprocess.exec
+      params:
+        working_dir: ${working_dir}
+        include_expansions_in_env: [build_variant]
+        binary: bash
+        args:
+          - ${script_dir}/install_heaptrack.sh
+    - command: expansions.update
+      params:
+        updates:
+          - key: heaptrack_path
+            value: ${working_dir}/heaptrack
+    - command: shell.exec
+      type: test
+      params:
+        shell: bash
+        working_dir: ${working_dir}
+        script: |
+          export PATH="$PATH:${heaptrack_path}/bin"
+          export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${heaptrack_path}/lib"
+          
+          heaptrack --version
