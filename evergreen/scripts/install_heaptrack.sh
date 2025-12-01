@@ -38,3 +38,7 @@ esac
 # Download and extract the tools
 curl -LO "https://mongosql-noexpire.s3.us-east-2.amazonaws.com/mem_usage/$TARGET"
 tar -xzvf $TARGET
+
+cat <<EOT > heaptrack_expansion.yml
+heaptrack_path: "$PWD/heaptrack"
+EOT

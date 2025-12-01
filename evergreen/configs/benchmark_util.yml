@@ -19,9 +19,7 @@ functions:
           - ${script_dir}/install_heaptrack.sh
     - command: expansions.update
       params:
-        updates:
-          - key: heaptrack_path
-            value: ${working_dir}/heaptrack
+        file: ${working_dir}/heaptrack_expansion.yml
     - command: shell.exec
       type: test
       params:
