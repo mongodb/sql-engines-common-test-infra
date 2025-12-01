@@ -1,7 +1,7 @@
 # This file contains common benchmark-related functions and tasks that are useful across multiple
 # SQL Engines evergreen projects. The functions in this config file depend on one or more of the
 # following expansions:
-#  - build_variant - the build variant the function or task on which the function or task is run
+#  - build_variant - the build variant on which the function or task is run
 #  - script_dir - path to the sql-engines-common-test-infra scripts (varies by repo)
 #  - working_dr - the working directory in which a function should run
 
