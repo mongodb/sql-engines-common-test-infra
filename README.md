@@ -108,7 +108,7 @@ and fetched with the project's source code. You _must_ specify the module in the
 on which you need the module present. (For the most part, this should already be set up on all relevant buildvariants 
 for all existing projects.)
 
-### Using updates to this module
+### ⚠️ IMPORTANT:  Using updates to this module ⚠️
 If you make updates to this repository and then need to use those updates in a downstream repo, you may encounter
 challenges on Evergreen.
 
