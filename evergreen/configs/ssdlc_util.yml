@@ -99,6 +99,53 @@ functions:
         args:
           - ${script_dir}/scan_sbom.sh
 
+  "write aws credentials to file for silkbomb":
+    - command: ec2.assume_role
+      display_name: Assume IAM role with permissions to get AWS credentials for Silkbomb
+      params:
+        role_arn: ${silkbomb_role_arn}
+    - command: shell.exec
+      display_name: Write AWS credentials to file for Silkbomb
+      params:
+        silent: true
+        shell: bash
+        include_expansions_in_env:
+          - AWS_ACCESS_KEY_ID
+          - AWS_SECRET_ACCESS_KEY
+          - AWS_SESSION_TOKEN
+        script: |
+          cat <<EOF > ${working_dir}/aws_vars.env
+          AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+          AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+          AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN
+          EOF
+
+  # Augments SBOM file and uploads to S3. Requires the working_dir and script_dir expansions to be set appropriately.
+  #
+  # Arguments:
+  #  - sbom_in_path - The path to the input SBOM file
+  #  - sbom_out_path - The path to the output SBOM file
+  #  - local_file_path - The path to the local file to upload to S3
+  #  - remote_file_path - The path to the remote file for upload to S3
+  "augment SBOM":
+    - command: subprocess.exec
+      type: test
+      params:
+        working_dir: ${working_dir}
+        binary: bash
+        add_expansions_to_env: true
+        args:
+          - ${script_dir}/augment_sbom.sh
+    - command: s3.put
+      params:
+        aws_key: ${aws_key}
+        aws_secret: ${aws_secret}
+        local_file: ${local_file_path}
+        remote_file: ${remote_file_path}
+        content_type: application/json
+        bucket: mciuploads
+        permissions: public-read
+
   "publish augmented SBOM":
     - command: s3.get
       params:
