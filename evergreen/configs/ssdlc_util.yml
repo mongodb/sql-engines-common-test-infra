@@ -95,6 +95,8 @@ functions:
         permissions: public-read
         display_name: ${COMPLIANCE_REPORT_NAME}
 
+  # Scans SBOM for vulnerabilities, allowing any vulnerabilties listed in the ALLOW_VULNS
+  # expansion. Requires working_dir, SBOM_DIR, and SBOM_LICENSES to be set appropriately.
   "scan SBOM":
     - command: subprocess.exec
       type: test
@@ -155,12 +157,17 @@ functions:
         bucket: mciuploads
         permissions: public-read
 
+  # Publishes the augmented SBOM file. Requires the working_dir, AUGMENTED_SBOM_FILENAME, and
+  # SBOM_FILENAME expansions to be set appropriately.
+  #
+  # Arguments:
+  #  - local_file_path - The path to the local file for downloading from/uploading to S3
   "publish augmented SBOM":
+    - *assume_role_cmd
     - command: s3.get
       params:
-        aws_key: ${aws_key}
-        aws_secret: ${aws_secret}
-        local_file: ${working_dir}/${AUGMENTED_SBOM_FILENAME}
+        <<: *evg_bucket_config
+        local_file: ${local_file_path}
         remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${AUGMENTED_SBOM_FILENAME}
         content_type: application/json
         bucket: mciuploads
@@ -169,7 +176,7 @@ functions:
       params:
         aws_key: ${release_aws_key}
         aws_secret: ${release_aws_secret}
-        local_file: ${working_dir}/${AUGMENTED_SBOM_FILENAME}
+        local_file: ${local_file_path}
         remote_file: ${working_dir}/${SBOM_FILENAME}
         bucket: translators-connectors-releases
         content_type: application/json
