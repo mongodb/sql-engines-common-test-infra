@@ -15,8 +15,8 @@ echo "Sarif Url = $SARIF_URL"
 echo "----- Generating ${COMPLIANCE_REPORT_NAME} -----"
 
 # Copy template
-echo "Copying template file from ${resources_dir}/compliance_report_template.md to ${COMPLIANCE_REPORT_NAME}"
-cp ${resources_dir}/compliance_report_template.md ${COMPLIANCE_REPORT_NAME}
+echo "Copying template file from ${compliance_report_template_path} to ${COMPLIANCE_REPORT_NAME}"
+cp ${compliance_report_template_path} ${COMPLIANCE_REPORT_NAME}
 
 # Update the version
 echo "Update the version"
