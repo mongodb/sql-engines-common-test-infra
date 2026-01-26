@@ -23,6 +23,15 @@ variables:
       working_dir: ${working_dir}
       PRODUCT_NAME: ${PRODUCT_NAME}
       binary: bash
+  - &assume_role_cmd
+    command: ec2.assume_role
+    params:
+      role_arn: ${assume_role_arn}
+      duration_seconds: 3600
+  - &evg_bucket_config
+    aws_key: ${AWS_ACCESS_KEY_ID}
+    aws_secret: ${AWS_SECRET_ACCESS_KEY}
+    aws_session_token: ${AWS_SESSION_TOKEN}
 
 functions:
   "create ssdlc expansions":
@@ -167,6 +176,9 @@ functions:
         permissions: public-read
         display_name: ${SBOM_FILENAME}
 
+  # Generates static code analysis file(s). Requires the working_dir and STATIC_CODE_ANALYSIS_NAME
+  # expansions to be set appropriately. Also requires the semgrep_app_token variable to be set in
+  # the evergreen project settings.
   "generate static code analysis":
     - command: subprocess.exec
       type: test
@@ -178,11 +190,10 @@ functions:
           - STATIC_CODE_ANALYSIS_NAME
         args:
           - ${script_dir}/generate_static_code_analysis.sh
+    - *assume_role_cmd
     - command: s3.put
       params:
-        # SQL-2918: we should use aws assume role instead once all the projects are set up this way.
-        aws_key: ${aws_key}
-        aws_secret: ${aws_secret}
+        <<: *evg_bucket_config
         local_files_include_filter:
           - ${STATIC_CODE_ANALYSIS_NAME}*
         remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/
@@ -190,20 +201,27 @@ functions:
         bucket: mciuploads
         permissions: public-read
 
+  # Publishes the static code analysis file. Requires the working_dir and STATIC_CODE_ANALYSIS_NAME
+  # expansions to be set appropriately.
+  #
+  # Arguments:
+  #  - get_from_bucket - the bucket from which to get the file that was created by the
+  #                      "generate static code analysis" function
+  #  - local_file_path - The path to the local file for downloading from/uploading to S3
   "publish static code analysis":
+    - *assume_role_cmd
     - command: s3.get
       params:
-        aws_key: ${aws_key}
-        aws_secret: ${aws_secret}
-        local_file: ${working_dir}/papertrail/${STATIC_CODE_ANALYSIS_NAME}
+        <<: *evg_bucket_config
+        local_file: ${local_file_path}
         remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${STATIC_CODE_ANALYSIS_NAME}
         content_type: application/json
-        bucket: mciuploads
+        bucket: ${get_from_bucket}
     - command: s3.put
       params:
         aws_key: ${release_aws_key}
         aws_secret: ${release_aws_secret}
-        local_file: ${working_dir}/papertrail/${STATIC_CODE_ANALYSIS_NAME}
+        local_file: ${local_file_path}
         remote_file: ${working_dir}/${STATIC_CODE_ANALYSIS_NAME}
         content_type: application/json
         bucket: translators-connectors-releases
