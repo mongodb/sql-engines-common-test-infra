@@ -6,8 +6,8 @@ echo "Author = ${author}"
 echo "Author email = ${author_email}"
 echo "Version = ${release_version}"
 
-SBOM_URL="https://translators-connectors-releases.s3.amazonaws.com/${working_dir}/${SBOM_FILENAME}"
-SARIF_URL="https://translators-connectors-releases.s3.amazonaws.com/${working_dir}/${STATIC_CODE_ANALYSIS_NAME}"
+SBOM_URL="https://translators-connectors-releases.s3.amazonaws.com/${published_sbom_path}"
+SARIF_URL="https://translators-connectors-releases.s3.amazonaws.com/${published_sarif_path}"
 
 echo "Sbom url = $SBOM_URL"
 echo "Sarif Url = $SARIF_URL"

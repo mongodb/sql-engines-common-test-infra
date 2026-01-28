@@ -48,6 +48,10 @@ functions:
   # Generates the compliance report. Requires working_dir and compliance_report_template_path to be
   # set appropriately. Also requires any expansions listed below that are referenced by the calling
   # repository's compliance report template.
+  #
+  # Arguments:
+  #  - published_sbom_path - the published SBOM path in S3
+  #  - published_sarif_path - the published static code analysis path in S3
   "generate compliance report":
     - command: subprocess.exec
       type: test
@@ -63,8 +67,8 @@ functions:
           - working_dir
           - compliance_report_template_path
           - COMPLIANCE_REPORT_NAME
-          - SBOM_FILENAME
-          - STATIC_CODE_ANALYSIS_NAME
+          - published_sbom_path
+          - published_sarif_path
         args:
           - ${script_dir}/generate_compliance_report.sh
     - *assume_role_cmd
