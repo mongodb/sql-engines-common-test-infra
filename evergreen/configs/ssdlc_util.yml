@@ -82,6 +82,7 @@ functions:
   #
   # Arguments:
   #  - local_file_path - The path to the local file for downloading from/uploading to S3
+  #  - published_file_path - The remote file path for uploading to S3
   "publish compliance report":
     - *assume_role_cmd
     - command: s3.get
@@ -96,14 +97,17 @@ functions:
         aws_key: ${release_aws_key}
         aws_secret: ${release_aws_secret}
         local_file: ${local_file_path}
-        remote_file: ${working_dir}/${COMPLIANCE_REPORT_NAME}
+        remote_file: ${published_file_path}
         content_type: text/markdown
         bucket: translators-connectors-releases
         permissions: public-read
         display_name: ${COMPLIANCE_REPORT_NAME}
 
   # Scans SBOM for vulnerabilities, allowing any vulnerabilities listed in the ALLOW_VULNS
-  # expansion. Requires working_dir, SBOM_DIR, and SBOM_LICENSES to be set appropriately.
+  # expansion. Requires working_dir and SBOM_DIR to be set appropriately.
+  #
+  # Arguments:
+  #  - sbom_path - the path to the sbom file to scan
   "scan SBOM":
     - command: subprocess.exec
       type: test
@@ -113,7 +117,7 @@ functions:
           - working_dir
           - ALLOW_VULNS
           - SBOM_DIR
-          - SBOM_LICENSES
+          - sbom_path
         args:
           - ${script_dir}/scan_sbom.sh
 
@@ -168,6 +172,7 @@ functions:
   #
   # Arguments:
   #  - local_file_path - The path to the local file for downloading from/uploading to S3
+  #  - published_file_path - The remote file path for uploading to S3
   "publish augmented SBOM":
     - *assume_role_cmd
     - command: s3.get
@@ -183,7 +188,7 @@ functions:
         aws_key: ${release_aws_key}
         aws_secret: ${release_aws_secret}
         local_file: ${local_file_path}
-        remote_file: ${working_dir}/${SBOM_FILENAME}
+        remote_file: ${published_file_path}
         bucket: translators-connectors-releases
         content_type: application/json
         permissions: public-read
@@ -221,6 +226,7 @@ functions:
   #  - get_from_bucket - the bucket from which to get the file that was created by the
   #                      "generate static code analysis" function
   #  - local_file_path - The path to the local file for downloading from/uploading to S3
+  #  - published_file_path - The remote file path for uploading to S3
   "publish static code analysis":
     - *assume_role_cmd
     - command: s3.get
@@ -235,7 +241,7 @@ functions:
         aws_key: ${release_aws_key}
         aws_secret: ${release_aws_secret}
         local_file: ${local_file_path}
-        remote_file: ${working_dir}/${STATIC_CODE_ANALYSIS_NAME}
+        remote_file: ${published_file_path}
         content_type: application/json
         bucket: translators-connectors-releases
         permissions: public-read

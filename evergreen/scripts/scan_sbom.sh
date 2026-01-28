@@ -19,6 +19,6 @@ if [[ "$ALLOW_VULNS" != "" ]]; then
 fi
 
 echo "-- Scanning dependency for vulnerabilities --"
-./$SBOM_DIR/grype sbom:$SBOM_LICENSES --fail-on low
+./$SBOM_DIR/grype sbom:$sbom_path --fail-on low
 echo "---------------------------------------------"
 echo "<<<< Done scanning SBOM"
