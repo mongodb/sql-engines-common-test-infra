@@ -79,7 +79,7 @@ functions:
         local_file: ${working_dir}/${COMPLIANCE_REPORT_NAME}
         remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${COMPLIANCE_REPORT_NAME}
         content_type: text/markdown
-        bucket: ${put_to_bucket|mciuploads}
+        bucket: ${put_to_bucket!|mciuploads}
         permissions: public-read
 
   # Publishes the compliance report. Requires the working_dir and COMPLIANCE_REPORT_NAME expansions
@@ -98,7 +98,7 @@ functions:
         local_file: ${local_file_path}
         remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${COMPLIANCE_REPORT_NAME}
         content_type: text/markdown
-        bucket: ${get_from_bucket|mciuploads}
+        bucket: ${get_from_bucket!|mciuploads}
     - command: s3.put
       params:
         aws_key: ${release_aws_key}
@@ -172,7 +172,7 @@ functions:
         local_file: ${working_dir}/${sbom_out_path}
         remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${AUGMENTED_SBOM_FILENAME}
         content_type: application/json
-        bucket: ${put_to_bucket|mciuploads}
+        bucket: ${put_to_bucket!|mciuploads}
         permissions: public-read
 
   # Publishes the augmented SBOM file. Requires the working_dir, AUGMENTED_SBOM_FILENAME, and
@@ -191,7 +191,7 @@ functions:
         local_file: ${local_file_path}
         remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${AUGMENTED_SBOM_FILENAME}
         content_type: application/json
-        bucket: ${get_from_bucket|mciuploads}
+        bucket: ${get_from_bucket!|mciuploads}
     - command: s3.put
       params:
         aws_key: ${release_aws_key}
@@ -228,7 +228,7 @@ functions:
           - ${STATIC_CODE_ANALYSIS_NAME}*
         remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/
         content_type: application/json
-        bucket: ${put_to_bucket|mciuploads}
+        bucket: ${put_to_bucket!|mciuploads}
         permissions: public-read
 
   # Publishes the static code analysis file. Requires the working_dir and STATIC_CODE_ANALYSIS_NAME
@@ -247,7 +247,7 @@ functions:
         local_file: ${local_file_path}
         remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${STATIC_CODE_ANALYSIS_NAME}
         content_type: application/json
-        bucket: ${get_from_bucket|mciuploads}
+        bucket: ${get_from_bucket!|mciuploads}
     - command: s3.put
       params:
         aws_key: ${release_aws_key}
