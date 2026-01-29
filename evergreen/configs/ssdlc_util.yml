@@ -192,7 +192,6 @@ functions:
         remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${AUGMENTED_SBOM_FILENAME}
         content_type: application/json
         bucket: ${get_from_bucket|mciuploads}
-        permissions: public-read
     - command: s3.put
       params:
         aws_key: ${release_aws_key}
