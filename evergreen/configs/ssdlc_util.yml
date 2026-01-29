@@ -50,6 +50,7 @@ functions:
   # repository's compliance report template.
   #
   # Arguments:
+  #  - put_to_bucket - optional. defaults to mciuploads. the bucket in which to put the compliance report
   #  - published_sbom_path - the published SBOM path in S3
   #  - published_sarif_path - the published static code analysis path in S3
   "generate compliance report":
@@ -78,13 +79,15 @@ functions:
         local_file: ${working_dir}/${COMPLIANCE_REPORT_NAME}
         remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${COMPLIANCE_REPORT_NAME}
         content_type: text/markdown
-        bucket: mciuploads
+        bucket: ${put_to_bucket|mciuploads}
         permissions: public-read
 
   # Publishes the compliance report. Requires the working_dir and COMPLIANCE_REPORT_NAME expansions
   # to be set appropriately.
   #
   # Arguments:
+  #  - get_from_bucket - optional. defaults to mciuploads. the bucket from which to get the file that was created by the
+  #                      "generate compliance report" function
   #  - local_file_path - The path to the local file for downloading from/uploading to S3
   #  - published_file_path - The remote file path for uploading to S3
   "publish compliance report":
@@ -95,7 +98,7 @@ functions:
         local_file: ${local_file_path}
         remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${COMPLIANCE_REPORT_NAME}
         content_type: text/markdown
-        bucket: mciuploads
+        bucket: ${get_from_bucket|mciuploads}
     - command: s3.put
       params:
         aws_key: ${release_aws_key}
@@ -149,6 +152,7 @@ functions:
   # Augments SBOM file and uploads to S3. Requires the working_dir and script_dir expansions to be set appropriately.
   #
   # Arguments:
+  #  - put_to_bucket - optional. defaults to mciuploads. the bucket in which to put the augmented file
   #  - sbom_in_path - The path to the input SBOM file
   #  - sbom_out_path - The path to the output SBOM file, relative to ${working_dir} (e.g. ODBC should just use
   #                    ${AUGMENTED_SBOM_FILENAME}, whereas JDBC should use artifacts/ssdlc/${AUGMENTED_SBOM_FILENAME})
@@ -168,13 +172,15 @@ functions:
         local_file: ${working_dir}/${sbom_out_path}
         remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${AUGMENTED_SBOM_FILENAME}
         content_type: application/json
-        bucket: mciuploads
+        bucket: ${put_to_bucket|mciuploads}
         permissions: public-read
 
   # Publishes the augmented SBOM file. Requires the working_dir, AUGMENTED_SBOM_FILENAME, and
   # SBOM_FILENAME expansions to be set appropriately.
   #
   # Arguments:
+  #  - get_from_bucket - optional. defaults to mciuploads. the bucket from which to get the file that was created by the
+  #                      "augment sbom" function
   #  - local_file_path - The path to the local file for downloading from/uploading to S3
   #  - published_file_path - The remote file path for uploading to S3
   "publish augmented SBOM":
@@ -185,7 +191,7 @@ functions:
         local_file: ${local_file_path}
         remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${AUGMENTED_SBOM_FILENAME}
         content_type: application/json
-        bucket: mciuploads
+        bucket: ${get_from_bucket|mciuploads}
         permissions: public-read
     - command: s3.put
       params:
@@ -201,6 +207,9 @@ functions:
   # Generates static code analysis file(s). Requires the working_dir and STATIC_CODE_ANALYSIS_NAME
   # expansions to be set appropriately. Also requires the semgrep_app_token variable to be set in
   # the evergreen project settings.
+  #
+  # Arguments:
+  #  - put_to_bucket - optional. defaults to mciuploads. the bucket in which to put the generated file
   "generate static code analysis":
     - command: subprocess.exec
       type: test
@@ -220,14 +229,14 @@ functions:
           - ${STATIC_CODE_ANALYSIS_NAME}*
         remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/
         content_type: application/json
-        bucket: mciuploads
+        bucket: ${put_to_bucket|mciuploads}
         permissions: public-read
 
   # Publishes the static code analysis file. Requires the working_dir and STATIC_CODE_ANALYSIS_NAME
   # expansions to be set appropriately.
   #
   # Arguments:
-  #  - get_from_bucket - the bucket from which to get the file that was created by the
+  #  - get_from_bucket - optional. defaults to mciuploads. the bucket from which to get the file that was created by the
   #                      "generate static code analysis" function
   #  - local_file_path - The path to the local file for downloading from/uploading to S3
   #  - published_file_path - The remote file path for uploading to S3
@@ -239,7 +248,7 @@ functions:
         local_file: ${local_file_path}
         remote_file: ${working_dir}/artifacts/${version_id}/ssdlc/${STATIC_CODE_ANALYSIS_NAME}
         content_type: application/json
-        bucket: ${get_from_bucket}
+        bucket: ${get_from_bucket|mciuploads}
     - command: s3.put
       params:
         aws_key: ${release_aws_key}
