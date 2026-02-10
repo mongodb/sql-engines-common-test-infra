@@ -6,8 +6,8 @@ echo "Author = ${author}"
 echo "Author email = ${author_email}"
 echo "Version = ${release_version}"
 
-SBOM_URL="https://translators-connectors-releases.s3.amazonaws.com/${working_dir}/${SBOM_FILENAME}"
-SARIF_URL="https://translators-connectors-releases.s3.amazonaws.com/${working_dir}/${STATIC_CODE_ANALYSIS_NAME}"
+SBOM_URL="https://translators-connectors-releases.s3.amazonaws.com/${published_sbom_path}"
+SARIF_URL="https://translators-connectors-releases.s3.amazonaws.com/${published_sarif_path}"
 
 echo "Sbom url = $SBOM_URL"
 echo "Sarif Url = $SARIF_URL"
@@ -15,8 +15,8 @@ echo "Sarif Url = $SARIF_URL"
 echo "----- Generating ${COMPLIANCE_REPORT_NAME} -----"
 
 # Copy template
-echo "Copying template file from ${resources_dir}/compliance_report_template.md to ${COMPLIANCE_REPORT_NAME}"
-cp ${resources_dir}/compliance_report_template.md ${COMPLIANCE_REPORT_NAME}
+echo "Copying template file from ${compliance_report_template_path} to ${COMPLIANCE_REPORT_NAME}"
+cp ${compliance_report_template_path} ${COMPLIANCE_REPORT_NAME}
 
 # Update the version
 echo "Update the version"
@@ -58,8 +58,8 @@ sed -i.bu "s,%PRODUCT_NAME%,${product_name},g" ${COMPLIANCE_REPORT_NAME}
 echo "---------------------------"
 
 echo "update the repo name"
-echo "sed -i.bu "s,%REPO_NAME%,${repo_name},g" ${COMPLIANCE_REPORT_NAME}"
-sed -i.bu "s,%REPO_NAME%,${repo_name},g" ${COMPLIANCE_REPORT_NAME}
+echo "sed -i.bu "s,%REPO_NAME%,${github_repo},g" ${COMPLIANCE_REPORT_NAME}"
+sed -i.bu "s,%REPO_NAME%,${github_repo},g" ${COMPLIANCE_REPORT_NAME}
 echo "---------------------------"
 
 echo "update the link to signing verification instructions"
