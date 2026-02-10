@@ -58,8 +58,8 @@ sed -i.bu "s,%PRODUCT_NAME%,${product_name},g" ${COMPLIANCE_REPORT_NAME}
 echo "---------------------------"
 
 echo "update the repo name"
-echo "sed -i.bu "s,%REPO_NAME%,${repo_name},g" ${COMPLIANCE_REPORT_NAME}"
-sed -i.bu "s,%REPO_NAME%,${repo_name},g" ${COMPLIANCE_REPORT_NAME}
+echo "sed -i.bu "s,%REPO_NAME%,${github_repo},g" ${COMPLIANCE_REPORT_NAME}"
+sed -i.bu "s,%REPO_NAME%,${github_repo},g" ${COMPLIANCE_REPORT_NAME}
 echo "---------------------------"
 
 echo "update the link to signing verification instructions"
