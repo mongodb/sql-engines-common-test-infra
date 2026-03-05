@@ -18,5 +18,5 @@ DRIVERS_TOOLS_PATH=$DRIVERS_TOOLS
 if [[ "Windows_NT" == "$OS" ]]; then
   DRIVERS_TOOLS_PATH=$(cygpath -m "$DRIVERS_TOOLS")
 fi
-git clone https://github.com/mongodb-labs/drivers-evergreen-tools.git $DRIVERS_TOOLS_PATH
+git clone --branch SQL-3117_AmazonLinux2Failure https://github.com/nbagnard/drivers-evergreen-tools.git $DRIVERS_TOOLS_PATH
 
