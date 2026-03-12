@@ -7,11 +7,12 @@ set -o errexit
 if [[ "Windows_NT" == "$OS" ]]; then
     export HOST="x86_64-pc-windows-msvc"
     export DEFAULT_TOOLCHAIN="stable-$HOST"
+    export DEFAULT_TOOLCHAIN_OPTIONS="--default-toolchain $DEFAULT_TOOLCHAIN"
 fi
 
 # install rustup from scratch
 rm -rf ~/.rustup
-curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path --default-toolchain $DEFAULT_TOOLCHAIN
+curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path --default-toolchain $DEFAULT_TOOLCHAIN_OPTIONS
 
 # rustup installs into C:\Users\$USER instead of
 # C:\home\$USER, so we symlink both .rustup and .cargo
