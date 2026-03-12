@@ -12,7 +12,7 @@ fi
 
 # install rustup from scratch
 rm -rf ~/.rustup
-curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path --default-toolchain $DEFAULT_TOOLCHAIN_OPTIONS
+curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path $DEFAULT_TOOLCHAIN_OPTIONS
 
 # rustup installs into C:\Users\$USER instead of
 # C:\home\$USER, so we symlink both .rustup and .cargo
