@@ -156,7 +156,12 @@ pub enum DataLoaderError {
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    println!("Step 1: Connecting to mongod.");
+    println!("Step 1: Reading data files.");
+    let test_data_files = read_data_files(args.test_data_directory)?;
+
+    // Connect after reading files so the tokio current_thread executor is not
+    // blocked on synchronous I/O while the driver's server monitor runs.
+    println!("Step 2: Connecting to mongod.");
     let mdb_uri = args.mongod_uri.unwrap_or_else(|| {
         format!(
             "mongodb://{}:{}",
@@ -168,9 +173,6 @@ async fn main() -> Result<()> {
     });
     println!("\tUsing mongod URI: {mdb_uri}");
     let mdb_client = Client::with_uri_str(mdb_uri).await?;
-
-    println!("Step 2: Reading data files.");
-    let test_data_files = read_data_files(args.test_data_directory)?;
 
     println!("Step 3: Dropping existing data based on namespaces in data files.");
     drop_collections(mdb_client.clone(), test_data_files.clone()).await?;
