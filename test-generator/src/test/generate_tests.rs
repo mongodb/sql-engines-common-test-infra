@@ -34,12 +34,12 @@ impl TestGenerator for TestTestGenerator {
 
         for (index, test_case) in parsed_test_file.tests.into_iter().enumerate() {
             let sanitized_name = sanitize_description(&test_case.description);
-            if test_case.skip_reason.is_some() {
+            if let Some(skip_reason) = &test_case.skip_reason {
                 write!(
                     generated_test_file,
                     include_str!("./testdata/templates/ignore_body_template"),
                     name = sanitized_name,
-                    skip_reason = test_case.skip_reason.as_ref().unwrap(),
+                    skip_reason = skip_reason,
                     feature = "sample"
                 )
                 .map_err(|e| Error::Io("failed to write".to_string(), e))?
