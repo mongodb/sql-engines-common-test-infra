@@ -6,13 +6,12 @@ set -o errexit
 # the default for cygwin
 if [[ "Windows_NT" == "$OS" ]]; then
     export HOST="x86_64-pc-windows-msvc"
-    export DEFAULT_HOST_OPTIONS="--default-host $HOST"
     export DEFAULT_TOOLCHAIN="stable-$HOST"
 fi
 
 # install rustup from scratch
 rm -rf ~/.rustup
-curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path $DEFAULT_HOST_OPTIONS
+curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path
 
 # rustup installs into C:\Users\$USER instead of
 # C:\home\$USER, so we symlink both .rustup and .cargo
