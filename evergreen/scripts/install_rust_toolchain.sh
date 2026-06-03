@@ -7,6 +7,7 @@ set -o errexit
 if [[ "Windows_NT" == "$OS" ]]; then
     export HOST="x86_64-pc-windows-msvc"
     export DEFAULT_TOOLCHAIN="stable-$HOST"
+    export DEFAULT_TOOLCHAIN_OPTIONS="--default-toolchain $DEFAULT_TOOLCHAIN"
 fi
 
 # install rustup from scratch
@@ -18,8 +19,6 @@ curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path
 if [[ "Windows_NT" == "$OS" ]]; then
     ln -sf /cygdrive/c/Users/$USER/.rustup/toolchains/$DEFAULT_TOOLCHAIN ~/.rustup
     ln -sf /cygdrive/c/Users/$USER/.cargo/ ~/.cargo
-    rustup toolchain install $DEFAULT_TOOLCHAIN
-    rustup default $DEFAULT_TOOLCHAIN
 fi
 
 echo --------- rustup show -----------
