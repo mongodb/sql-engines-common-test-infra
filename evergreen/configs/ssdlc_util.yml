@@ -148,6 +148,22 @@ functions:
           AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
           AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN
           EOF
+    - command: ec2.assume_role
+      display_name: Assume DevProd Platforms ECR readonly IAM role
+      params:
+        role_arn: ${devprod_platforms_ecr_readonly_role_arn}
+    - command: shell.exec
+      display_name: Log in to DevProd Platforms ECR
+      params:
+        silent: true
+        shell: bash
+        include_expansions_in_env:
+          - AWS_ACCESS_KEY_ID
+          - AWS_SECRET_ACCESS_KEY
+          - AWS_SESSION_TOKEN
+        script: |
+          set -o errexit
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 901841024863.dkr.ecr.us-east-1.amazonaws.com
 
   # Augments SBOM file and uploads to S3. Requires the working_dir and script_dir expansions to be set appropriately.
   #
