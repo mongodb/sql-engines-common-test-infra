@@ -24,8 +24,20 @@ semgrep --config p/rust --sarif --exclude "integration_test" --verbose --error -
 SCAN_RESULT=$?
 set -e
 
-# This adds a timestamp to the SAST file (i.e., this adds `"executionDateTime": <timestamp>` to `runs.invocations`). 
+# This adds a timestamp to the SAST file (i.e., this adds `"executionDateTime": <timestamp>` to `runs.invocations`).
+set +e
 jq --arg ts "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" '(.runs[] | select(has("invocations"))).invocations[0].executionDateTime = $ts' ${STATIC_CODE_ANALYSIS_NAME} > temp.sarif && mv temp.sarif ${STATIC_CODE_ANALYSIS_NAME}
+SARIF_RESULT=$?
+set -e
+
+# Preserve Semgrep's failure, but do not mask a jq/mv failure if Semgrep passed.
+if [[ "${SCAN_RESULT}" -eq 0 && "${SARIF_RESULT}" -ne 0 ]]; then
+  SCAN_RESULT=${SARIF_RESULT}
+fi
+
+printf '%s\n' "${SCAN_RESULT}" > "${STATIC_CODE_ANALYSIS_NAME}.exit_code"
+echo "Semgrep scan completed with result ${SCAN_RESULT}"
+
 
 # Exit with a failure if the scan found an issue
 exit $SCAN_RESULT

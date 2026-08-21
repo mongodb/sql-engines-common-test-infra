@@ -230,6 +230,8 @@ functions:
       type: test
       params:
         <<: *rust_subprocess_default_params
+        # We want to continue on error so that the result files are uploaded and retrievable is semgrep fails.
+        continue_on_err: true
         include_expansions_in_env:
           - semgrep_app_token
           - working_dir
@@ -246,6 +248,18 @@ functions:
         content_type: application/json
         bucket: ${put_to_bucket!|mciuploads}
         permissions: public-read
+    - command: subprocess.exec
+      type: test
+      params:
+        <<: *rust_subprocess_default_params
+        include_expansions_in_env:
+          - STATIC_CODE_ANALYSIS_NAME
+        args:
+          - "-c"
+          - |
+            status_file="${STATIC_CODE_ANALYSIS_NAME}.exit_code"
+            test -s "${status_file}"
+            exit "$(cat "${status_file}")"
 
   # Publishes the static code analysis file. Requires the working_dir and STATIC_CODE_ANALYSIS_NAME
   # expansions to be set appropriately.
