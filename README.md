@@ -109,20 +109,17 @@ on which you need the module present. (For the most part, this should already be
 for all existing projects.)
 
 ### ⚠️ IMPORTANT:  Using updates to this module ⚠️
-If you make updates to this repository and then need to use those updates in a downstream repo, you may encounter
-challenges on Evergreen.
+If you make updates to this repository and want to test those changes in a downstream repo before pushing them, you
+may do so by using the `evergreen` cli tool. First, ensure you have the `evergreen` cli tool installed and authenticated.
+Then, in the downstream project you wish to test changes in, create a patch and include your local fork (with edits) of
+this repository as a module. You can do so like this:
+```shell
+evergreen patch -p <project id> --include-module sql-engines-common-test-infra=/absolute/path/to/sql-engines-common-test-infra
+```
+Tip: don't forget to include the `-u` flag to include uncommitted local changes.
 
-In particular, at time of writing, Evergreen has a [bug](https://jira.mongodb.org/browse/DEVPROD-22792) where the
-`auto_update` flag is ignored even when set to `true`. What that means in practice is that if you commit a change to
-this repository, you will not be able to utilize that change in downstream repos until the downstream repos themselves
-have unrelated commits made to their `main` branches. That is because the bug causes Evergreen to always use the module
-revision (i.e., version) from the "base commit" (i.e., the last commit from the `main` branch off of which your feature
-branch was created). The intent of using `auto_update: true` for a module is to ensure the latest revision is used as
-opposed to the revision from the base commit.
+When your changes to this repository are merged, the downstream projects should pick them up automatically. To achieve this,
+ensure each downstream project specifies the module with `auto_update: true`, as described in the previous section.
 
-Until that bug is properly addressed, to work around it all you need to do is either wait for an unrelated change to
-merge into `main`, or push a dummy commit to main yourself. Either way, the new commit to `main` will pull the latest
-version of the module on the Evergreen waterfall. After that, you could create a new branch off `main` that utilizes
-new changes in the module. Note that if you already have a branch that attempted to use the newer module version but
-failed, you'll need to **rebase** that branch on main (**not** merge). Rebasing ensures the base commit is the one that
-pulled in the latest module revision; merging does not accomplish this. 
+It is advised that you run a manual patch for relevant downstream projects before merging pull requests to main. This
+helps ensure that the changes you make do not break downstream projects.
