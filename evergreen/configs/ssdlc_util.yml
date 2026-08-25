@@ -257,9 +257,9 @@ functions:
         args:
           - "-c"
           - |
-            status_file="${STATIC_CODE_ANALYSIS_NAME}.exit_code"
-            test -s "${status_file}"
-            exit "$(cat "${status_file}")"
+            status_file="$STATIC_CODE_ANALYSIS_NAME.exit_code"
+            test -s "$status_file"
+            exit "$(cat "$status_file")"
 
   # Publishes the static code analysis file. Requires the working_dir and STATIC_CODE_ANALYSIS_NAME
   # expansions to be set appropriately.
