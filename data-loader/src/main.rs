@@ -313,8 +313,8 @@ async fn load_test_data(client: Client, test_data_files: Vec<TestDataFile>) -> R
                         res.index_names, entry.db, c.name
                     );
                 }
-            } else if let Some(v) = entry.view {
-                if let Some(d) = v.definition {
+            } else if let Some(v) = entry.view
+                && let Some(d) = v.definition {
                     // If this data entry describes a view and a definition is
                     // provided, then create the view.
                     println!(
@@ -330,7 +330,6 @@ async fn load_test_data(client: Client, test_data_files: Vec<TestDataFile>) -> R
                         v.name, entry.db, d.view_on,
                     );
                 }
-            }
         }
     }
 
