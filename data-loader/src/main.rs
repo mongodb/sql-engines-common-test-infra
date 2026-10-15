@@ -1,7 +1,7 @@
 use clap::Parser;
 use mongodb::{
-    bson::{datetime, doc, Bson, Document},
     Client, Database, IndexModel,
+    bson::{Bson, Document, datetime, doc},
 };
 use serde::{Deserialize, Serialize};
 use std::{env, fs, io};
@@ -148,7 +148,9 @@ pub enum DataLoaderError {
     SerdeJson(#[from] serde_json::Error),
     #[error(transparent)]
     SerdeYaml(#[from] serde_yaml::Error),
-    #[error("Each entry must specify exactly one of 'view' or 'collection', but at least one entry in {0} does not")]
+    #[error(
+        "Each entry must specify exactly one of 'view' or 'collection', but at least one entry in {0} does not"
+    )]
     InvalidViewOrCollectionDataEntry(String),
 }
 
@@ -314,22 +316,23 @@ async fn load_test_data(client: Client, test_data_files: Vec<TestDataFile>) -> R
                     );
                 }
             } else if let Some(v) = entry.view
-                && let Some(d) = v.definition {
-                    // If this data entry describes a view and a definition is
-                    // provided, then create the view.
-                    println!(
-                        "\tAttempting to create view {} on {}.{}",
-                        v.name, entry.db, d.view_on,
-                    );
-                    db.create_collection(v.name.clone())
-                        .view_on(d.view_on.clone())
-                        .pipeline(d.pipeline)
-                        .await?;
-                    println!(
-                        "\tSuccessfully created view {} on {}.{}",
-                        v.name, entry.db, d.view_on,
-                    );
-                }
+                && let Some(d) = v.definition
+            {
+                // If this data entry describes a view and a definition is
+                // provided, then create the view.
+                println!(
+                    "\tAttempting to create view {} on {}.{}",
+                    v.name, entry.db, d.view_on,
+                );
+                db.create_collection(v.name.clone())
+                    .view_on(d.view_on.clone())
+                    .pipeline(d.pipeline)
+                    .await?;
+                println!(
+                    "\tSuccessfully created view {} on {}.{}",
+                    v.name, entry.db, d.view_on,
+                );
+            }
         }
     }
 
@@ -343,7 +346,9 @@ async fn set_schemas_in_adf(client: Client, test_data_files: Vec<TestDataFile>) 
             let datasource_name = match (entry.collection, entry.view) {
                 (Some(c), None) => c.name,
                 (None, Some(v)) => v.name,
-                _ => unreachable!("Invariant failed: Each entry must specify exactly one of 'view' or 'collection'."),
+                _ => unreachable!(
+                    "Invariant failed: Each entry must specify exactly one of 'view' or 'collection'."
+                ),
             };
 
             let db: Database;
@@ -384,7 +389,9 @@ async fn set_schemas_in_mongod(client: Client, test_data_files: Vec<TestDataFile
             let (datasource_name, datasource_type) = match (entry.collection, entry.view) {
                 (Some(c), None) => (c.name, "collection"),
                 (None, Some(v)) => (v.name, "view"),
-                _ => unreachable!("Invariant failed: Each entry must specify exactly one of 'view' or 'collection'."),
+                _ => unreachable!(
+                    "Invariant failed: Each entry must specify exactly one of 'view' or 'collection'."
+                ),
             };
 
             // Only write schema for entries where it is specified

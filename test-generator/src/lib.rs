@@ -6,9 +6,9 @@
 #[cfg(test)]
 mod test;
 
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::{
-    fs::{self, read_dir, File, OpenOptions, ReadDir},
+    fs::{self, File, OpenOptions, ReadDir, read_dir},
     io::{self, Write},
     path::{Path, PathBuf},
 };
@@ -201,7 +201,7 @@ pub fn generate_tests(
             return Err(Error::Io(
                 "failed to create generated test directory".to_string(),
                 why,
-            ))
+            ));
         }
         (Err(delete_err), Err(create_err)) => {
             return Err(Error::Multiple(vec![
@@ -213,7 +213,7 @@ pub fn generate_tests(
                     "failed to create generated test directory".to_string(),
                     create_err,
                 ),
-            ]))
+            ]));
         }
     }
 

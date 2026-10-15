@@ -1,7 +1,7 @@
 use crate::{
+    Error, NoOptions, Result, TestGenerator, TestGeneratorFactory, YamlTestCase, YamlTestFile,
     generate_tests, parse_yaml_test_file, sanitize_description,
-    test::parse_yaml_file::SampleTestCase, Error, NoOptions, Result, TestGenerator,
-    TestGeneratorFactory, YamlTestCase, YamlTestFile,
+    test::parse_yaml_file::SampleTestCase,
 };
 use serde::{Deserialize, Serialize};
 use std::{
@@ -153,7 +153,9 @@ pub mod src_test_testdata_sample_test_file;
     if actual_generated_mod_file != expected_generated_mod_file_option_1
         && actual_generated_mod_file != expected_generated_mod_file_option_2
     {
-        panic!("expected either:\n\t'{expected_generated_mod_file_option_1}'\nor:\n\t'{expected_generated_mod_file_option_2}'\nbut got:\n\t'{actual_generated_mod_file}'")
+        panic!(
+            "expected either:\n\t'{expected_generated_mod_file_option_1}'\nor:\n\t'{expected_generated_mod_file_option_2}'\nbut got:\n\t'{actual_generated_mod_file}'"
+        )
     }
 
     let expected_generated_test_file = r#"#![cfg_attr(rustfmt, rustfmt_skip)]
