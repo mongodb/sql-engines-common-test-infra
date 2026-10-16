@@ -1,4 +1,4 @@
-use crate::{parse_yaml_test_file, Result, YamlTestCase, YamlTestFile};
+use crate::{Result, YamlTestCase, YamlTestFile, parse_yaml_test_file};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
