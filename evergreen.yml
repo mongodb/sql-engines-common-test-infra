@@ -77,14 +77,22 @@ tasks:
         vars:
           description: "run rust unit tests"
 
+  # Runs with mongo-orchestration or with mongodb-runner, depending on whether the build variant
+  # sets the USE_MONGODB_RUNNER expansion.
   - name: test-run-adf
     commands:
       - func: "prepare resources"
       - func: "update orchestrator mongod port"
       - func: "bootstrap mongo-orchestration"
+      - func: "check mongodb deployment"
+        vars:
+          state: running
       - func: "generate sql-engines github token"
       - func: "run run_adf.sh test"
       - func: "stop mongo-orchestration"
+      - func: "check mongodb deployment"
+        vars:
+          state: stopped
 
 buildvariants:
   - name: static-analysis
@@ -111,5 +119,22 @@ buildvariants:
   - name: ubuntu2204-run-adf-test
     display_name: "Ubuntu 22.04 - run_adf.sh Test"
     run_on: [ ubuntu2204-small ]
+    tasks:
+      - name: test-run-adf
+
+  # The same as the variants above, but using mongodb-runner instead of mongo-orchestration.
+  - name: windows-mongodb-runner
+    display_name: "Windows - mongodb-runner"
+    run_on: [windows-64-vsMulti-small]
+    expansions:
+      USE_MONGODB_RUNNER: "true"
+    tasks:
+      - name: test-run-adf
+
+  - name: ubuntu2204-run-adf-test-mongodb-runner
+    display_name: "Ubuntu 22.04 - run_adf.sh Test - mongodb-runner"
+    run_on: [ ubuntu2204-small ]
+    expansions:
+      USE_MONGODB_RUNNER: "true"
     tasks:
       - name: test-run-adf

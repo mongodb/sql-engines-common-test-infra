@@ -45,6 +45,41 @@ is named appropriately. If you need to add a new Evergreen function, you should 
 script in that directory and using the Evergreen `subprocess.exec` command to invoke that script. See existing configs
 and scripts for details on this.
 
+## MongoDB Deployments
+[evergreen/configs/mongodb_util.yml](evergreen/configs/mongodb_util.yml) has the functions that SQL Engines projects
+use to start and stop a MongoDB deployment for their tests: `prepare resources` fetches
+[drivers-evergreen-tools](https://github.com/mongodb-labs/drivers-evergreen-tools), `bootstrap mongo-orchestration`
+starts a deployment, and `stop mongo-orchestration` stops it.
+
+mongo-orchestration is deprecated in favor of [mongodb-runner](https://github.com/mongodb-js/devtools-shared/tree/main/packages/mongodb-runner)
+(see SQL-3232 and DRIVERS-3335). Until all projects have moved, the functions above support both, and the
+`USE_MONGODB_RUNNER` expansion selects which one is used. If it is unset (the default) mongo-orchestration is used via
+`run-orchestration.sh`. If it is set to a non-empty value mongodb-runner is used via `run-mongodb.sh`. The function
+names do not change. To opt a project in, set the expansion for it, for example in its `create-expansions` script:
+```yaml
+USE_MONGODB_RUNNER: "true"
+```
+To go back, remove it. `stop mongo-orchestration` is safe to use in a project's `post` block: when using mongodb-runner
+it does nothing in tasks that did not start a deployment.
+
+A project that needs a deployment drivers-evergreen-tools does not have a config for (e.g. a replica set with specific
+member priorities and tags) can keep its own config files in the orchestration format, copy them into
+`$DRIVERS_TOOLS/.evergreen/orchestration/configs/<topology>s/` before bootstrapping, and set the `ORCHESTRATION_FILE`
+expansion to the file's name. Both mongo-orchestration and mongodb-runner read this format. Avoid pointing
+`MONGO_ORCHESTRATION_HOME` at the project instead: mongodb-runner then writes its state there, and stopping looks for it
+in the default location.
+
+Some notes on how this works:
+- drivers-evergreen-tools is pinned to a specific revision in [fetch_drivers_tools.sh](evergreen/scripts/fetch_drivers_tools.sh)
+  so that upstream changes cannot silently change our CI. To update it, change the pinned revision and run the `test-run-adf`
+  task on all of its build variants (they cover both mongo-orchestration and mongodb-runner). To try a different revision
+  without changing the pin, set the `DRIVERS_TOOLS_REF` expansion (e.g. in a project's create-expansions script).
+- The `check mongodb deployment` function asserts that a deployment is `running` (the server responds, and the `mongod`
+  and `mongosh` binaries are in `$DRIVERS_TOOLS/mongodb/bin`) or `stopped`.
+- When mongodb-runner is used on a non-Windows host, drivers-evergreen-tools replaces `mongod` in
+  `$DRIVERS_TOOLS/mongodb/bin` with a shell script that wraps the real binary, `mongod-real`. Scripts that need to start
+  their own `mongod` should prefer `mongod-real` when it exists (see [start_compute_node.sh](evergreen/scripts/start_compute_node.sh)).
+
 ## ADF Test Environment
 The [test-environment](test-environment) directory contains the [run_adf.sh](test-environment/run_adf.sh) script, which
 is useful for deploying a local ADF instance. This directory also contains the relevant configuration files for ADF.
