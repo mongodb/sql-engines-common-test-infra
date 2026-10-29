@@ -3,32 +3,24 @@
 # following expansions:
 #  - DRIVERS_TOOLS - path to the drivers-evergreen-tools directory (varies by repo)
 #  - MONGODB_BINARIES - path to mongodb binaries (varies by repo)
-#  - MONGO_ORCHESTRATION_HOME - path to mongo-orchestration (varies by repo; only used when
-#    USE_MONGODB_RUNNER is not set)
+#  - MONGO_ORCHESTRATION_HOME - path to mongo-orchestration (varies by repo)
 #  - PROJECT_DIRECTORY - path to project (varies by repo)
 #  - script_dir - path to the sql-engines-common-test-infra scripts (varies by repo)
 #  - working_dir - the working directory in which a function should run
 #
 # The following expansions are optional:
-#  - USE_MONGODB_RUNNER - if set to a non-empty value, deployments are started and stopped with
-#    mongodb-runner (via drivers-evergreen-tools' run-mongodb.sh) instead of mongo-orchestration.
-#    mongo-orchestration is deprecated and this will become the only behavior (SQL-3232); projects
-#    opt in by setting this expansion, e.g. in their create-expansions script.
-#  - DRIVERS_TOOLS_REF - the drivers-evergreen-tools revision to use instead of the one pinned in
-#    fetch_drivers_tools.sh (e.g. to test a newer revision in a patch)
+#  - USE_MONGODB_RUNNER - set to "true" to use mongodb-runner instead of the deprecated
+#    mongo-orchestration (SQL-3232); see the README
+#  - DRIVERS_TOOLS_REF - the drivers-evergreen-tools revision to use instead of the pinned one
 
 functions:
   # Starts a mongodb deployment using drivers-evergreen-tools. Use "stop mongo-orchestration" to stop it.
-  #
-  # This uses mongo-orchestration, unless the USE_MONGODB_RUNNER expansion is set, in which case it
-  # uses mongodb-runner.
   #
   # Arguments:
   #   - TOPOLOGY - topology of deployment (often our projects just use "server")
   #   - MONGODB_VERSION - the version to use (can use aliases such as "latest")
   #   - ORCHESTRATION_FILE - (optional) the name of the config file to use, from
-  #     $DRIVERS_TOOLS/.evergreen/orchestration/configs/<topology>s/. A project with its own configs
-  #     can copy them there first.
+  #     $DRIVERS_TOOLS/.evergreen/orchestration/configs/<topology>s/
   "bootstrap mongo-orchestration":
     - command: subprocess.exec
       params:
@@ -56,8 +48,8 @@ functions:
         args:
           - ${script_dir}/fetch_drivers_tools.sh
 
-  # Stops a mongodb deployment started via "bootstrap mongo-orchestration". This is safe to use in
-  # a `post` block, even in tasks that did not start a deployment.
+  # Stops a mongodb deployment started via "bootstrap mongo-orchestration". With USE_MONGODB_RUNNER
+  # this is safe to use in a `post` block, even in tasks that did not start a deployment.
   "stop mongo-orchestration":
     - command: subprocess.exec
       params:
@@ -83,7 +75,6 @@ functions:
         binary: bash
         include_expansions_in_env:
           - DRIVERS_TOOLS
-          - MDB_TEST_LOCAL_PORT
           - MONGODB_VERSION
         args:
           - ${script_dir}/check_mongodb_deployment.sh

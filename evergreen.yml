@@ -77,8 +77,7 @@ tasks:
         vars:
           description: "run rust unit tests"
 
-  # Runs with mongo-orchestration or with mongodb-runner, depending on whether the build variant
-  # sets the USE_MONGODB_RUNNER expansion.
+  # Uses mongodb-runner on build variants that set USE_MONGODB_RUNNER, and mongo-orchestration otherwise.
   - name: test-run-adf
     commands:
       - func: "prepare resources"
@@ -122,7 +121,7 @@ buildvariants:
     tasks:
       - name: test-run-adf
 
-  # The same as the variants above, but using mongodb-runner instead of mongo-orchestration.
+  # The same as the windows and ubuntu2204-run-adf-test variants above, but using mongodb-runner.
   - name: windows-mongodb-runner
     display_name: "Windows - mongodb-runner"
     run_on: [windows-64-vsMulti-small]

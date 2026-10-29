@@ -7,11 +7,9 @@ if [[ -z "$DRIVERS_TOOLS" ]]; then
     exit 1
 fi
 
-# The drivers-evergreen-tools revision used by all SQL Engines projects. We pin it so that upstream
-# changes (it is mid-migration from mongo-orchestration to mongodb-runner) cannot silently change
-# our CI. To bump it, update the default below and run the `test-run-adf` task on all of its
-# build variants in this repo. To try another revision without changing the pin (e.g. in a patch
-# build), set the DRIVERS_TOOLS_REF expansion.
+# The drivers-evergreen-tools revision used by all SQL Engines projects (master on 2026-10-27), pinned
+# so that upstream changes cannot silently change our CI. To bump it, run the `test-run-adf` task on
+# all of its build variants. To try another revision in a patch, set the DRIVERS_TOOLS_REF expansion.
 DRIVERS_TOOLS_REF="${DRIVERS_TOOLS_REF:-5753ca3568cc728bdf43024e967bdfbb341e5c48}"
 
 rm -rf $DRIVERS_TOOLS

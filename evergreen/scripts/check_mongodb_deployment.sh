@@ -1,17 +1,12 @@
 #!/bin/bash
 #
-# Checks the state of the MongoDB deployment managed by start_mongodb.sh and stop_mongodb.sh.
+# Checks that the MongoDB deployment managed by start_mongodb.sh and stop_mongodb.sh is `running` or
+# `stopped`. Usage: check_mongodb_deployment.sh <running|stopped>
 #
-# Usage: check_mongodb_deployment.sh <running|stopped>
-#
-# Environment:
-#   DRIVERS_TOOLS       (required) path to the drivers-evergreen-tools directory
-#   MDB_TEST_LOCAL_PORT port of the deployment (default: 28017, see update_orchestrator_mongod_port.sh)
-#   MONGODB_VERSION     if this is a major.minor version (e.g. 6.0), the running server must match it
-#
-# `running` also checks that the mongod and mongosh binaries are in $DRIVERS_TOOLS/mongodb/bin, since
-# other scripts in this repo (run_adf.sh, start_compute_node.sh) and the SQL Engines projects rely
-# on that layout.
+# Uses DRIVERS_TOOLS (required), MDB_TEST_LOCAL_PORT (default 28017, as in
+# update_orchestrator_mongod_port.sh) and MONGODB_VERSION (if it is major.minor, e.g. 6.0, the running
+# server must match it). `running` also checks that mongod and mongosh are in $DRIVERS_TOOLS/mongodb/bin,
+# which run_adf.sh, start_compute_node.sh and the projects rely on.
 
 set -o errexit
 set -o pipefail
@@ -43,21 +38,15 @@ find_binary() {
     fi
 }
 
-MONGOD=$(find_binary mongod)
 MONGOSH=$(find_binary mongosh)
 
 if [[ "$STATE" == "running" ]]; then
-    [[ -n "$MONGOD" ]] || fail "mongod not found in $BIN_DIR"
+    [[ -n "$(find_binary mongod)" ]] || fail "mongod not found in $BIN_DIR"
     [[ -n "$MONGOSH" ]] || fail "mongosh not found in $BIN_DIR"
 
     VERSION=$("$MONGOSH" --quiet --port "$PORT" --eval 'db.version()' | tr -d '\r') ||
         fail "no mongod is responding on port $PORT"
     echo "mongod $VERSION is running on port $PORT"
-
-    # Not asserted on, but handy for comparing deployments started by mongo-orchestration and by
-    # mongodb-runner.
-    echo "Command line options:"
-    "$MONGOSH" --quiet --port "$PORT" --eval 'JSON.stringify(db.adminCommand({getCmdLineOpts: 1}).parsed)'
 
     if [[ "$MONGODB_VERSION" =~ ^[0-9]+\.[0-9]+$ && "$VERSION" != "$MONGODB_VERSION".* ]]; then
         fail "expected mongod $MONGODB_VERSION but found $VERSION"
