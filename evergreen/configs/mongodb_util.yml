@@ -7,25 +7,37 @@
 #  - PROJECT_DIRECTORY - path to project (varies by repo)
 #  - script_dir - path to the sql-engines-common-test-infra scripts (varies by repo)
 #  - working_dir - the working directory in which a function should run
+#
+# The following expansions are optional:
+#  - USE_MONGODB_RUNNER - set to "true" to use mongodb-runner instead of the deprecated
+#    mongo-orchestration (SQL-3232); see the README
+#  - DRIVERS_TOOLS_REF - the drivers-evergreen-tools revision to use instead of the pinned one
 
 functions:
-  # Starts a mongodb deployment using drivers-evergreen-tools' mongo-orchestration
-  # tool.
+  # Starts a mongodb deployment using drivers-evergreen-tools. Use "stop mongodb" to stop it.
   #
   # Arguments:
   #   - TOPOLOGY - topology of deployment (often our projects just use "server")
   #   - MONGODB_VERSION - the version to use (can use aliases such as "latest")
-  "bootstrap mongo-orchestration":
+  #   - ORCHESTRATION_FILE - (optional) the name of the config file to use, from
+  #     $DRIVERS_TOOLS/.evergreen/orchestration/configs/<topology>s/
+  "start mongodb": &start_mongodb
     - command: subprocess.exec
       params:
-        binary: sh
+        working_dir: ${working_dir}
+        binary: bash
         args:
-          - ${DRIVERS_TOOLS}/.evergreen/run-orchestration.sh
+          - ${script_dir}/start_mongodb.sh
         include_expansions_in_env:
           - DRIVERS_TOOLS
           - MONGODB_BINARIES
           - TOPOLOGY
           - MONGODB_VERSION
+          - ORCHESTRATION_FILE
+          - USE_MONGODB_RUNNER
+
+  # Deprecated name of "start mongodb". Evergreen functions can't call each other, hence the alias.
+  "bootstrap mongo-orchestration": *start_mongodb
 
   # Fetches the drivers-evergreen-tools repo as a resource
   "prepare resources":
@@ -34,22 +46,45 @@ functions:
         working_dir: ${working_dir}
         include_expansions_in_env:
           - DRIVERS_TOOLS
+          - DRIVERS_TOOLS_REF
         binary: bash
         args:
           - ${script_dir}/fetch_drivers_tools.sh
 
-  # Stops a mongodb deployment started via "bootstrap mongo-orchestration"
-  "stop mongo-orchestration":
+  # Stops a mongodb deployment started via "start mongodb". With USE_MONGODB_RUNNER this is safe to
+  # use in a `post` block, even in tasks that did not start a deployment.
+  "stop mongodb": &stop_mongodb
     - command: subprocess.exec
       params:
         working_dir: ${working_dir}
-        binary: sh
+        binary: bash
         include_expansions_in_env:
           - DRIVERS_TOOLS
           - MONGO_ORCHESTRATION_HOME
           - PROJECT_DIRECTORY
+          - USE_MONGODB_RUNNER
         args:
-          - ${script_dir}/stop_mongo_orchestration.sh
+          - ${script_dir}/stop_mongodb.sh
+
+  # Deprecated name of "stop mongodb".
+  "stop mongo-orchestration": *stop_mongodb
+
+  # Checks that the deployment started via "start mongodb" is running or stopped.
+  #
+  # Arguments:
+  #   - state - "running" or "stopped"
+  "check mongodb deployment":
+    - command: subprocess.exec
+      type: test
+      params:
+        working_dir: ${working_dir}
+        binary: bash
+        include_expansions_in_env:
+          - DRIVERS_TOOLS
+          - MONGODB_VERSION
+        args:
+          - ${script_dir}/check_mongodb_deployment.sh
+          - ${state}
 
   "generate sql-engines github token":
     command: github.generate_token
