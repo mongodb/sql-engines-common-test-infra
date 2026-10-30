@@ -82,13 +82,13 @@ tasks:
     commands:
       - func: "prepare resources"
       - func: "update orchestrator mongod port"
-      - func: "bootstrap mongo-orchestration"
+      - func: "start mongodb"
       - func: "check mongodb deployment"
         vars:
           state: running
       - func: "generate sql-engines github token"
       - func: "run run_adf.sh test"
-      - func: "stop mongo-orchestration"
+      - func: "stop mongodb"
       - func: "check mongodb deployment"
         vars:
           state: stopped

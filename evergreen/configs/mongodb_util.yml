@@ -14,14 +14,14 @@
 #  - DRIVERS_TOOLS_REF - the drivers-evergreen-tools revision to use instead of the pinned one
 
 functions:
-  # Starts a mongodb deployment using drivers-evergreen-tools. Use "stop mongo-orchestration" to stop it.
+  # Starts a mongodb deployment using drivers-evergreen-tools. Use "stop mongodb" to stop it.
   #
   # Arguments:
   #   - TOPOLOGY - topology of deployment (often our projects just use "server")
   #   - MONGODB_VERSION - the version to use (can use aliases such as "latest")
   #   - ORCHESTRATION_FILE - (optional) the name of the config file to use, from
   #     $DRIVERS_TOOLS/.evergreen/orchestration/configs/<topology>s/
-  "bootstrap mongo-orchestration":
+  "start mongodb": &start_mongodb
     - command: subprocess.exec
       params:
         working_dir: ${working_dir}
@@ -36,6 +36,9 @@ functions:
           - ORCHESTRATION_FILE
           - USE_MONGODB_RUNNER
 
+  # Deprecated name of "start mongodb". Evergreen functions can't call each other, hence the alias.
+  "bootstrap mongo-orchestration": *start_mongodb
+
   # Fetches the drivers-evergreen-tools repo as a resource
   "prepare resources":
     - command: subprocess.exec
@@ -48,9 +51,9 @@ functions:
         args:
           - ${script_dir}/fetch_drivers_tools.sh
 
-  # Stops a mongodb deployment started via "bootstrap mongo-orchestration". With USE_MONGODB_RUNNER
-  # this is safe to use in a `post` block, even in tasks that did not start a deployment.
-  "stop mongo-orchestration":
+  # Stops a mongodb deployment started via "start mongodb". With USE_MONGODB_RUNNER this is safe to
+  # use in a `post` block, even in tasks that did not start a deployment.
+  "stop mongodb": &stop_mongodb
     - command: subprocess.exec
       params:
         working_dir: ${working_dir}
@@ -63,7 +66,10 @@ functions:
         args:
           - ${script_dir}/stop_mongodb.sh
 
-  # Checks that the deployment started via "bootstrap mongo-orchestration" is running or stopped.
+  # Deprecated name of "stop mongodb".
+  "stop mongo-orchestration": *stop_mongodb
+
+  # Checks that the deployment started via "start mongodb" is running or stopped.
   #
   # Arguments:
   #   - state - "running" or "stopped"

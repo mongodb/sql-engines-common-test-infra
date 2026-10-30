@@ -48,14 +48,15 @@ and scripts for details on this.
 ## MongoDB Deployments
 [evergreen/configs/mongodb_util.yml](evergreen/configs/mongodb_util.yml) has the functions that SQL Engines projects
 use to start and stop a MongoDB deployment for their tests: `prepare resources` fetches
-[drivers-evergreen-tools](https://github.com/mongodb-labs/drivers-evergreen-tools) (DET), `bootstrap mongo-orchestration`
-starts a deployment, and `stop mongo-orchestration` stops it.
+[drivers-evergreen-tools](https://github.com/mongodb-labs/drivers-evergreen-tools) (DET), `start mongodb` starts a
+deployment, and `stop mongodb` stops it. Projects that still use the old names, `bootstrap mongo-orchestration` and
+`stop mongo-orchestration`, keep working through aliases, but should migrate: the old names will be removed.
 
 mongo-orchestration is deprecated in favor of [mongodb-runner](https://github.com/mongodb-js/devtools-shared/tree/main/packages/mongodb-runner)
-(see SQL-3232 and DRIVERS-3335). Until all projects have moved, the functions support both and their names do not
-change. Set the `USE_MONGODB_RUNNER` expansion to `"true"` (e.g. in the project's `create-expansions` script) to use
-mongodb-runner via `run-mongodb.sh`, or leave it unset to use mongo-orchestration via `run-orchestration.sh`. With the
-runner, `stop mongo-orchestration` does nothing in tasks that did not start a deployment, so it is safe in a `post` block.
+(see SQL-3232 and DRIVERS-3335). Until all projects have moved, the functions support both. Set the
+`USE_MONGODB_RUNNER` expansion to `"true"` (e.g. in the project's `create-expansions` script) to use mongodb-runner via
+`run-mongodb.sh`, or leave it unset to use mongo-orchestration via `run-orchestration.sh`. With the runner,
+`stop mongodb` does nothing in tasks that did not start a deployment, so it is safe in a `post` block.
 
 A project that needs a deployment DET has no config for (e.g. a replica set with specific member priorities and tags)
 can keep its own config files in the orchestration format, which both tools read. Copy them into
