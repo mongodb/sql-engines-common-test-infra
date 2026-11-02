@@ -24,6 +24,10 @@ if [[ "Windows_NT" == "$OS" ]]; then
   DRIVERS_TOOLS_PATH=$(cygpath -m "$DRIVERS_TOOLS")
 fi
 git clone https://github.com/mongodb-labs/drivers-evergreen-tools.git $DRIVERS_TOOLS_PATH
-git -C $DRIVERS_TOOLS_PATH checkout --quiet "$DRIVERS_TOOLS_REF"
-echo "Using drivers-evergreen-tools at $(git -C $DRIVERS_TOOLS_PATH rev-parse HEAD)"
+# cd instead of `git -C`, which the git on rhel76 is too old to support
+(
+    cd "$DRIVERS_TOOLS_PATH"
+    git checkout --quiet "$DRIVERS_TOOLS_REF"
+    echo "Using drivers-evergreen-tools at $(git rev-parse HEAD)"
+)
 
