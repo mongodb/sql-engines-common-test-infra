@@ -13,7 +13,6 @@ cargo_bin: "$CARGO_BIN"
 working_dir: sql-engines-common-test-infra
 script_dir: ./evergreen/scripts
 DRIVERS_TOOLS: "$DRIVERS_TOOLS"
-MONGO_ORCHESTRATION_HOME: "$DRIVERS_TOOLS/.evergreen/orchestration"
 prepare_shell: |
   set -o errexit
   export PATH="$PATH"
