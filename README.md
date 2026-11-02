@@ -45,6 +45,32 @@ is named appropriately. If you need to add a new Evergreen function, you should 
 script in that directory and using the Evergreen `subprocess.exec` command to invoke that script. See existing configs
 and scripts for details on this.
 
+## MongoDB Deployments
+[evergreen/configs/mongodb_util.yml](evergreen/configs/mongodb_util.yml) has the functions that SQL Engines projects
+use to start and stop a MongoDB deployment for their tests: `prepare resources` fetches
+[drivers-evergreen-tools](https://github.com/mongodb-labs/drivers-evergreen-tools) (DET), `start mongodb` starts a
+deployment, and `stop mongodb` stops it. Projects that still use the old names, `bootstrap mongo-orchestration` and
+`stop mongo-orchestration`, keep working through aliases, but should migrate: the old names will be removed.
+
+mongo-orchestration is deprecated in favor of [mongodb-runner](https://github.com/mongodb-js/devtools-shared/tree/main/packages/mongodb-runner)
+(see SQL-3232 and DRIVERS-3335). Until all projects have moved, the functions support both. Set the
+`USE_MONGODB_RUNNER` expansion to `"true"` (e.g. in the project's `create-expansions` script) to use mongodb-runner via
+`run-mongodb.sh`, or leave it unset to use mongo-orchestration via `run-orchestration.sh`. With the runner,
+`stop mongodb` does nothing in tasks that did not start a deployment, so it is safe in a `post` block.
+
+A project that needs a deployment DET has no config for (e.g. a replica set with specific member priorities and tags)
+can keep its own config files in the orchestration format, which both tools read. Copy them into
+`$DRIVERS_TOOLS/.evergreen/orchestration/configs/<topology>s/` before bootstrapping and set the `ORCHESTRATION_FILE`
+expansion to the file's name. Leave `MONGO_ORCHESTRATION_HOME` at its default: start and stop have to agree on where
+mongodb-runner keeps its state.
+
+Some notes on how this works:
+- DET is pinned in [fetch_drivers_tools.sh](evergreen/scripts/fetch_drivers_tools.sh) so that upstream changes cannot
+  silently change our CI. To update it, change the pinned revision and run the `test-run-adf` task on all of its build
+  variants. To try another revision without changing the pin, set the `DRIVERS_TOOLS_REF` expansion.
+- With the runner on a non-Windows host, DET replaces `$DRIVERS_TOOLS/mongodb/bin/mongod` with a wrapper script around
+  `mongod-real`. Scripts that start their own `mongod` should prefer `mongod-real` when it exists.
+
 ## ADF Test Environment
 The [test-environment](test-environment) directory contains the [run_adf.sh](test-environment/run_adf.sh) script, which
 is useful for deploying a local ADF instance. This directory also contains the relevant configuration files for ADF.

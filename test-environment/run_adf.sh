@@ -24,7 +24,13 @@ if [[ -z $ARG ]]; then
   exit 0
 fi
 
-GO_VERSION="go1.22"
+# Hosts have different Go versions installed, so use the newest of these that is present. go downloads
+# the newer toolchain that mongohouse's go.mod asks for.
+for GO_VERSION in go1.27 go1.26 go1.25; do
+  if [ -d "/opt/golang/$GO_VERSION" ] || [ -d "C:\\golang\\$GO_VERSION" ]; then
+    break
+  fi
+done
 if [ -d "/opt/golang/$GO_VERSION" ]; then
   GOROOT="/opt/golang/$GO_VERSION"
   GOBINDIR="$GOROOT"/bin
