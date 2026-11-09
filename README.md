@@ -49,20 +49,18 @@ and scripts for details on this.
 [evergreen/configs/mongodb_util.yml](evergreen/configs/mongodb_util.yml) has the functions that SQL Engines projects
 use to start and stop a MongoDB deployment for their tests: `prepare resources` fetches
 [drivers-evergreen-tools](https://github.com/mongodb-labs/drivers-evergreen-tools) (DET), `start mongodb` starts a
-deployment, and `stop mongodb` stops it. Projects that still use the old names, `bootstrap mongo-orchestration` and
-`stop mongo-orchestration`, keep working through aliases, but should migrate: the old names will be removed.
+deployment, and `stop mongodb` stops it. `stop mongodb` does nothing in tasks that did not start a deployment, so it is
+safe in a `post` block.
 
-mongo-orchestration is deprecated in favor of [mongodb-runner](https://github.com/mongodb-js/devtools-shared/tree/main/packages/mongodb-runner)
-(see SQL-3232 and DRIVERS-3335). Until all projects have moved, the functions support both. Set the
-`USE_MONGODB_RUNNER` expansion to `"true"` (e.g. in the project's `create-expansions` script) to use mongodb-runner via
-`run-mongodb.sh`, or leave it unset to use mongo-orchestration via `run-orchestration.sh`. With the runner,
-`stop mongodb` does nothing in tasks that did not start a deployment, so it is safe in a `post` block.
+The deployments use DET's [mongodb-runner](https://github.com/mongodb-js/devtools-shared/tree/main/packages/mongodb-runner)
+support (`run-mongodb.sh`), which replaced the deprecated mongo-orchestration (see SQL-3232 and DRIVERS-3335). On hosts
+where the runner can't be installed (e.g. amazon2 and rhel76, whose Node is too old), DET falls back to
+mongo-orchestration by itself.
 
 A project that needs a deployment DET has no config for (e.g. a replica set with specific member priorities and tags)
-can keep its own config files in the orchestration format, which both tools read. Copy them into
-`$DRIVERS_TOOLS/.evergreen/orchestration/configs/<topology>s/` before bootstrapping and set the `ORCHESTRATION_FILE`
-expansion to the file's name. Leave `MONGO_ORCHESTRATION_HOME` at its default: start and stop have to agree on where
-mongodb-runner keeps its state.
+can keep its own config files in the orchestration format, which DET reads. Copy them into
+`$DRIVERS_TOOLS/.evergreen/orchestration/configs/<topology>s/` before starting the deployment and set the
+`ORCHESTRATION_FILE` expansion to the file's name.
 
 Some notes on how this works:
 - DET is pinned in [fetch_drivers_tools.sh](evergreen/scripts/fetch_drivers_tools.sh) so that upstream changes cannot
